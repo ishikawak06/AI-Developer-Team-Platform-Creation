@@ -1,922 +1,1861 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>NEXUS-6 | Enterprise AI Studio</title>
-  
-  <!-- Tailwind CSS (CDN) -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  
-  <!-- Highlight.js untuk Syntax Highlighting Code -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/atom-one-dark.min.css">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
-  
-  <!-- Babel Standalone (Agar bisa menulis React JSX langsung di HTML) -->
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NEXUS-6 | AI Developer Platform</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Syne:wght@500;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<style>
+:root {
+  --bg-main: #070707;
+  --bg-panel: #121212;
+  --accent: #ccff00;
+  --accent-hover: #aadd00;
+  --text-main: #e0e0e0;
+  --text-muted: #888;
+  --border: #2a2a2a;
+  --cyan: #00ffcc;
+  --magenta: #ff00ff;
+  --red: #ff3333;
+  --orange: #ff9900;
+  --yellow: #ffcc00;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg-main);
+  color: var(--text-main);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  overflow: hidden;
+  height: 100vh;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+}
+h1,h2,h3,.font-display { font-family: 'Syne', sans-serif; }
+button { cursor: pointer; font-family: inherit; font-size: 12px; background: none; border: none; color: inherit; }
+input, textarea, select { font-family: inherit; font-size: 12px; color: var(--text-main); background: #0a0a0a; }
+textarea { resize: none; }
 
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Syne:wght@500;700;800&display=swap');
-    
-    :root {
-      --bg-main: #070707;
-      --bg-panel: #121212;
-      --accent: #ccff00; 
-      --accent-hover: #aadd00;
-      --text-main: #e0e0e0;
-      --text-muted: #888888;
-      --border-color: #2a2a2a;
-      --agent-tint: transparent;
-    }
+/* SCROLLBAR */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: var(--bg-main); }
+::-webkit-scrollbar-thumb { background: var(--border); }
+::-webkit-scrollbar-thumb:hover { background: var(--accent); }
 
-    body {
-      background-color: var(--bg-main);
-      color: var(--text-main);
-      font-family: 'JetBrains Mono', monospace;
-      margin: 0;
-      overflow: hidden;
-      position: relative;
-    }
+/* BRUTAL */
+.bb { border: 1px solid var(--border); }
+.bs { box-shadow: 4px 4px 0 var(--accent); }
+.bs:active { box-shadow: 1px 1px 0 var(--accent); transform: translate(3px,3px); }
 
-    body::before {
-      content: ""; position: absolute; inset: 0; z-index: -1;
-      background-color: var(--agent-tint); transition: background-color 0.5s ease;
-      pointer-events: none;
-    }
+/* ANIMATIONS */
+@keyframes slideIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+@keyframes toastIn { from { transform:translateX(110%); opacity:0; } to { transform:translateX(0); opacity:1; } }
+@keyframes glitch { 0%{transform:translate(0)} 20%{transform:translate(-2px,1px)} 40%{transform:translate(-1px,-1px)} 60%{transform:translate(2px,1px)} 80%{transform:translate(1px,-1px)} 100%{transform:translate(0)} }
+@keyframes spin { to { transform:rotate(360deg); } }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+@keyframes ping { 0%{transform:scale(1);opacity:1} 100%{transform:scale(2);opacity:0} }
+.msg-enter { animation: slideIn .3s ease forwards; }
+.spin { animation: spin 1s linear infinite; display:inline-block; }
+.pulse { animation: pulse 1.5s ease infinite; }
+.ping { animation: ping 1s ease infinite; }
+.glitch:hover { animation: glitch .2s linear infinite; }
 
-    body::after {
-      content: ""; position: absolute; inset: 0; z-index: -1; opacity: 0.04; pointer-events: none;
-      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
-    }
+/* SCANLINES */
+.scanlines { position: relative; }
+.scanlines::before {
+  content:" "; display:block; position:absolute; top:0; left:0; bottom:0; right:0;
+  background: linear-gradient(rgba(18,16,16,0) 50%, rgba(0,0,0,.25) 50%), linear-gradient(90deg, rgba(255,0,0,.06), rgba(0,255,0,.02), rgba(0,0,255,.06));
+  z-index:50; background-size:100% 2px,3px 100%; pointer-events:none;
+}
 
-    h1, h2, h3, .font-display { font-family: 'Syne', sans-serif; }
-    .brutal-border { border: 1px solid var(--border-color); }
-    .brutal-shadow { box-shadow: 4px 4px 0px var(--accent); transition: all 0.2s ease; }
-    .brutal-shadow:active { box-shadow: 1px 1px 0px var(--accent); transform: translate(3px, 3px); }
-    
-    .agent-btn { transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); }
-    .agent-btn.active { background-color: var(--accent); color: #000; border-color: var(--accent); box-shadow: 4px 4px 0px rgba(0,0,0,0.5); }
-    .agent-btn:hover:not(.active) { border-color: var(--accent); color: var(--accent); padding-left: 1.5rem; }
+/* LAYOUT */
+#app { display:flex; height:100vh; width:100%; position:relative; }
+#sidebar {
+  width: 280px; min-width: 280px; border-right: 1px solid var(--border);
+  background: var(--bg-panel); display:flex; flex-direction:column;
+  z-index: 50; transition: transform .3s ease;
+}
+#main { flex:1; display:flex; flex-direction:column; min-width:0; background: var(--bg-main); }
 
-    ::-webkit-scrollbar { width: 6px; height: 6px; }
-    ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 0; }
-    ::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+/* SIDEBAR ITEMS */
+.sidebar-head { padding: 18px 20px; border-bottom: 1px solid var(--border); }
+.logo { font-family:'Syne',sans-serif; font-weight:800; font-size:22px; display:flex; align-items:center; gap:8px; }
+.logo svg { color: var(--accent); }
+.badge-pro { font-size:9px; background:var(--accent); color:#000; padding:2px 6px; font-weight:700; letter-spacing:.1em; }
+.badge-v { font-size:9px; color:var(--cyan); border:1px solid var(--cyan); padding:2px 6px; font-weight:700; letter-spacing:.1em; }
+.sidebar-nav { display:flex; justify-content:space-between; margin-top:14px; }
+.sidebar-nav button { font-size:10px; color:var(--text-muted); text-transform:uppercase; letter-spacing:.1em; display:flex; align-items:center; gap:4px; }
+.sidebar-nav button:hover { color: var(--accent); }
+.agent-list { flex:1; overflow-y:auto; padding:14px; display:flex; flex-direction:column; gap:8px; }
+.agent-list-label { display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; }
+.agent-list-label span { font-size:10px; color:var(--text-muted); text-transform:uppercase; letter-spacing:.15em; font-weight:700; }
+.agent-btn {
+  width:100%; text-align:left; padding:12px; border:1px solid var(--border);
+  background:#0a0a0a; display:flex; align-items:center; gap:8px;
+  transition:all .25s ease; color:var(--text-main);
+}
+.agent-btn:hover:not(.active) { border-color:var(--accent); color:var(--accent); padding-left:18px; }
+.agent-btn.active { background:var(--accent); color:#000; border-color:var(--accent); box-shadow:4px 4px 0 var(--accent); }
+.agent-btn .agent-name { font-family:'Syne',sans-serif; font-weight:700; font-size:11px; text-transform:uppercase; letter-spacing:.05em; flex:1; }
+.agent-btn .agent-model { font-size:8px; border:1px solid currentColor; padding:1px 4px; opacity:.6; }
+.sidebar-foot { padding:12px 16px; border-top:1px solid var(--border); background:#0a0a0a; }
+.api-key-btn { width:100%; display:flex; align-items:center; justify-content:space-between; font-size:11px; color:var(--text-muted); }
+.api-key-btn:hover { color:var(--accent); }
 
-    .msg-enter { animation: slideIn 0.3s ease forwards; opacity: 0; transform: translateY(10px); }
-    @keyframes slideIn { to { opacity: 1; transform: translateY(0); } }
-    .toast-enter { animation: toastIn 0.4s cubic-bezier(0.25, 0.8, 0.25, 1) forwards; }
-    @keyframes toastIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-    .glitch-text:hover { animation: glitch 0.2s linear infinite; }
-    @keyframes glitch { 0% { transform: translate(0) } 20% { transform: translate(-2px, 1px) } 40% { transform: translate(-1px, -1px) } 60% { transform: translate(2px, 1px) } 80% { transform: translate(1px, -1px) } 100% { transform: translate(0) } }
+/* HEADER */
+#header { height:56px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; padding:0 20px; background:rgba(7,7,7,.9); backdrop-filter:blur(8px); flex-shrink:0; }
+.header-left { display:flex; align-items:center; gap:10px; min-width:0; }
+.header-agent { font-family:'Syne',sans-serif; font-weight:700; font-size:12px; text-transform:uppercase; letter-spacing:.1em; display:flex; align-items:center; gap:8px; }
+.header-proj { color:var(--text-muted); font-family:'JetBrains Mono',monospace; font-weight:400; font-size:11px; border-left:1px solid var(--border); padding-left:10px; margin-left:4px; max-width:180px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; text-transform:none; letter-spacing:0; }
+.header-right { display:flex; gap:8px; flex-shrink:0; }
+.hbtn { padding:6px 12px; border:1px solid var(--border); font-size:10px; font-family:'Syne',sans-serif; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:var(--text-muted); display:flex; align-items:center; gap:6px; position:relative; }
+.hbtn:hover { border-color:var(--accent); color:var(--accent); }
+.hbtn .dot-badge { position:absolute; top:-3px; right:-3px; width:7px; height:7px; background:var(--cyan); border-radius:50%; animation:pulse 1.5s ease infinite; }
 
-    .scanlines::before {
-      content: " "; display: block; position: absolute; inset: 0; z-index: 50; pointer-events: none;
-      background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
-      background-size: 100% 2px, 3px 100%;
-    }
-  </style>
+/* SEARCH BAR */
+#searchbar { padding:8px 16px; background:#0a0a0a; border-bottom:1px solid var(--border); display:flex; gap:8px; align-items:center; flex-shrink:0; }
+.search-wrap { flex:1; position:relative; }
+.search-wrap svg { position:absolute; left:10px; top:50%; transform:translateY(-50%); color:#555; pointer-events:none; }
+#searchInput { width:100%; background:#111; border:1px solid var(--border); padding:6px 10px 6px 32px; font-size:11px; color:var(--text-main); outline:none; }
+#searchInput:focus { border-color:var(--accent); }
+.filter-btn { padding:6px 12px; border:1px solid var(--border); font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:var(--text-muted); display:flex; align-items:center; gap:4px; }
+.filter-btn.active { border-color:var(--accent); color:var(--accent); background:#1a2200; }
+.filter-btn:hover { color:var(--text-main); }
+
+/* CHAT */
+#chatArea { flex:1; overflow-y:auto; padding:24px 32px; display:flex; flex-direction:column; gap:20px; }
+.msg-wrap { display:flex; }
+.msg-wrap.user { justify-content:flex-end; }
+.msg-wrap.agent { justify-content:flex-start; }
+.msg-bubble { max-width:85%; padding:16px 18px; border:1px solid var(--border); position:relative; }
+.msg-bubble.user { background:#1a1a1a; border-color:#333; }
+.msg-bubble.agent { background:#0a0a0a; border-left-width:3px; }
+.msg-meta { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
+.msg-sender { font-size:10px; text-transform:uppercase; letter-spacing:.12em; font-weight:700; }
+.msg-actions { display:flex; align-items:center; gap:10px; }
+.msg-action-btn { font-size:10px; color:var(--text-muted); text-transform:uppercase; display:flex; align-items:center; gap:4px; opacity:0; transition:opacity .2s; }
+.msg-bubble:hover .msg-action-btn { opacity:1; }
+.msg-action-btn:hover { color:var(--accent); }
+.msg-time { font-size:10px; color:#555; }
+.msg-content { font-size:13px; color:#d0d0d0; line-height:1.7; word-break:break-word; }
+.msg-content strong { color:#fff; }
+.msg-content code { background:#1a1a1a; color:var(--accent); padding:1px 5px; font-size:12px; }
+.msg-content pre { background:#0d0d0d; border:1px solid var(--border); padding:14px; margin:8px 0; overflow-x:auto; border-radius:0; }
+.msg-content pre code { background:none; color:inherit; padding:0; font-size:12px; }
+.typing-indicator { display:flex; align-items:center; gap:8px; padding:14px 16px; border:1px solid var(--border); background:#0a0a0a; border-left-width:3px; align-self:flex-start; }
+.typing-indicator span { font-size:10px; text-transform:uppercase; letter-spacing:.1em; color:var(--text-muted); }
+
+/* CONTEXT WARNING */
+#ctxWarning { display:none; padding:6px 16px; background:#332200; border-top:1px solid rgba(255,153,0,.3); font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.1em; color:var(--orange); flex-shrink:0; align-items:center; gap:8px; }
+#ctxWarning.show { display:flex; }
+
+/* INPUT AREA */
+#inputArea { padding:14px 20px; border-top:1px solid var(--border); background:var(--bg-panel); flex-shrink:0; position:relative; }
+#slashMenu { position:absolute; bottom:100%; left:20px; width:280px; background:#1a1a1a; border:1px solid var(--border); z-index:60; display:none; }
+#slashMenu.show { display:block; }
+.slash-head { padding:8px 12px; border-bottom:1px solid #333; font-size:10px; color:var(--text-muted); text-transform:uppercase; font-weight:700; letter-spacing:.1em; background:#111; }
+.slash-item { padding:10px 12px; border-bottom:1px solid var(--border); cursor:pointer; }
+.slash-item:hover { background:#222; }
+.slash-trigger { font-size:11px; font-weight:700; color:var(--accent); }
+.slash-title { font-size:11px; color:#fff; margin-left:8px; }
+.slash-preview { font-size:10px; color:var(--text-muted); margin-top:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.input-form { display:flex; gap:8px; align-items:flex-end; }
+.input-wrap { flex:1; display:flex; align-items:flex-end; background:#0a0a0a; border:1px solid var(--border); transition:border-color .2s; position:relative; }
+.input-wrap:focus-within { border-color:var(--accent); }
+#chatInput { flex:1; padding:12px 44px 12px 12px; font-size:13px; min-height:52px; max-height:180px; outline:none; border:none; line-height:1.5; }
+#micBtn { position:absolute; right:10px; bottom:10px; padding:4px; color:#555; border-radius:2px; }
+#micBtn:hover { color:var(--accent); }
+#micBtn.listening { color:#fff; background:#ff3333; animation:pulse 1s ease infinite; }
+.input-btns { display:flex; gap:8px; flex-shrink:0; }
+.icon-btn { background:#1a1a1a; border:1px solid var(--border); padding:0 14px; height:52px; display:flex; align-items:center; justify-content:center; color:var(--text-muted); }
+.icon-btn:hover { color:#fff; border-color:#555; }
+#sendBtn { background:var(--accent); color:#000; border:1px solid var(--accent); padding:0 22px; height:52px; font-family:'Syne',sans-serif; font-weight:700; display:flex; align-items:center; justify-content:center; }
+#sendBtn:hover:not(:disabled) { background:var(--accent-hover); }
+#sendBtn:disabled { opacity:.4; cursor:not-allowed; }
+
+/* LOCK SCREEN */
+#lockScreen { display:none; position:fixed; inset:0; z-index:200; background:rgba(0,0,0,.75); backdrop-filter:blur(4px); align-items:center; justify-content:center; padding:20px; }
+#lockScreen.show { display:flex; }
+.lock-box { background:#0a0a0a; border:2px solid var(--cyan); padding:36px 28px; max-width:360px; width:100%; text-align:center; box-shadow:0 0 40px rgba(0,255,204,.15); }
+.lock-icon { color:var(--cyan); font-size:48px; margin-bottom:16px; }
+.lock-title { font-family:'Syne',sans-serif; font-weight:700; font-size:18px; text-transform:uppercase; letter-spacing:.15em; color:var(--cyan); margin-bottom:10px; }
+.lock-badge { display:inline-flex; align-items:center; gap:6px; background:var(--cyan); color:#000; padding:5px 12px; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.08em; margin-bottom:14px; }
+.lock-status { font-size:10px; color:var(--cyan); text-transform:uppercase; font-weight:700; letter-spacing:.1em; background:rgba(0,255,204,.1); padding:10px 14px; border:1px solid rgba(0,255,204,.3); display:flex; align-items:center; gap:8px; justify-content:center; }
+#lockAbort { margin-top:14px; font-size:11px; color:var(--red); text-transform:uppercase; font-weight:700; letter-spacing:.08em; display:none; }
+#lockAbort:hover { text-decoration:underline; }
+#lockAbort svg { vertical-align:middle; margin-right:4px; }
+
+/* TOAST */
+#toast { position:fixed; top:16px; right:16px; z-index:300; padding:12px 16px; border:1px solid; display:none; align-items:center; gap:10px; animation:toastIn .4s ease forwards; max-width:320px; }
+#toast.show { display:flex; }
+#toast.error { background:#220000; border-color:var(--red); color:var(--red); }
+#toast.success { background:#002211; border-color:var(--cyan); color:var(--cyan); }
+#toast.warning { background:#221100; border-color:var(--yellow); color:var(--yellow); }
+#toast span { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; }
+
+/* MODALS */
+.modal-overlay { display:none; position:fixed; inset:0; z-index:100; background:rgba(0,0,0,.85); backdrop-filter:blur(4px); align-items:center; justify-content:center; padding:16px; }
+.modal-overlay.show { display:flex; }
+.modal { background:var(--bg-panel); border:1px solid var(--border); width:100%; display:flex; flex-direction:column; max-height:90vh; }
+.modal-head { padding:14px 18px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; background:#0a0a0a; flex-shrink:0; }
+.modal-head h2 { font-family:'Syne',sans-serif; font-weight:700; font-size:15px; text-transform:uppercase; letter-spacing:.12em; display:flex; align-items:center; gap:8px; }
+.modal-close { color:var(--text-muted); padding:4px; }
+.modal-close:hover { color:#fff; }
+.modal-body { padding:20px; flex:1; overflow-y:auto; }
+
+/* API MODAL */
+#apiModal .modal { max-width:420px; box-shadow:8px 8px 0 var(--accent); }
+.modal-desc { font-size:11px; color:var(--text-muted); line-height:1.7; margin-bottom:16px; }
+.form-field { margin-bottom:14px; }
+.form-label { font-size:10px; text-transform:uppercase; letter-spacing:.1em; font-weight:700; color:var(--text-muted); display:block; margin-bottom:6px; }
+.form-input { width:100%; background:#0a0a0a; border:1px solid var(--border); padding:10px 12px; font-size:12px; outline:none; }
+.form-input:focus { border-color:var(--accent); }
+.form-select { width:100%; background:#0a0a0a; border:1px solid var(--border); padding:8px 12px; font-size:12px; outline:none; }
+.btn-primary { width:100%; background:var(--accent); color:#000; padding:12px; font-family:'Syne',sans-serif; font-weight:700; text-transform:uppercase; letter-spacing:.1em; border:1px solid var(--accent); box-shadow:4px 4px 0 var(--accent); }
+.btn-primary:hover { background:var(--accent-hover); }
+.btn-danger { font-size:11px; color:var(--red); text-transform:uppercase; font-weight:700; }
+.btn-danger:hover { text-decoration:underline; }
+
+/* PROJECT MODAL */
+#projectModal .modal { max-width:680px; box-shadow:8px 8px 0 var(--accent); }
+.proj-form { display:flex; gap:10px; margin-bottom:20px; }
+.proj-form input { flex:1; }
+.proj-form button { background:var(--accent); color:#000; padding:10px 20px; font-family:'Syne',sans-serif; font-weight:700; text-transform:uppercase; border:1px solid var(--accent); display:flex; align-items:center; gap:6px; }
+.proj-list-head { display:flex; justify-content:space-between; align-items:center; font-size:11px; color:var(--text-muted); text-transform:uppercase; font-weight:700; letter-spacing:.1em; margin-bottom:12px; }
+.proj-list-head button { color:var(--text-muted); display:flex; align-items:center; gap:4px; }
+.proj-list-head button:hover { color:#fff; }
+.proj-item { display:flex; align-items:center; justify-content:space-between; padding:14px; border:1px solid var(--border); margin-bottom:8px; gap:12px; }
+.proj-item.active-proj { border-color:var(--accent); background:#0a0a0a; box-shadow:4px 4px 0 var(--accent); }
+.proj-item-info { flex:1; cursor:pointer; min-width:0; }
+.proj-item-name { font-family:'Syne',sans-serif; font-weight:700; font-size:15px; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.proj-item.active-proj .proj-item-name { color:var(--accent); }
+.proj-item-time { font-size:10px; color:#666; margin-top:4px; display:flex; align-items:center; gap:4px; }
+.proj-item-actions { display:flex; gap:6px; flex-shrink:0; align-items:center; }
+.proj-badge { font-size:10px; background:var(--accent); color:#000; padding:2px 8px; font-weight:700; text-transform:uppercase; }
+.proj-icon-btn { padding:7px; border:1px solid var(--border); color:var(--text-muted); }
+.proj-icon-btn:hover.edit { color:var(--accent); border-color:var(--accent); }
+.proj-icon-btn:hover.del { color:var(--red); border-color:var(--red); }
+.proj-rename-form { display:flex; gap:8px; align-items:center; }
+.proj-rename-form input { background:#1a1a1a; border:1px solid var(--border); padding:5px 8px; font-size:12px; outline:none; }
+.proj-rename-form input:focus { border-color:var(--accent); }
+.proj-rename-form button { color:var(--accent); padding:4px; }
+
+/* ANALYTICS MODAL */
+#analyticsModal .modal { max-width:480px; box-shadow:8px 8px 0 var(--cyan); }
+.analytics-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.analytics-card { background:#0a0a0a; border:1px solid var(--border); padding:16px; }
+.analytics-label { font-size:10px; color:var(--text-muted); text-transform:uppercase; font-weight:700; letter-spacing:.1em; margin-bottom:6px; }
+.analytics-value { font-family:'Syne',sans-serif; font-size:28px; font-weight:700; }
+
+/* AGENT MODAL */
+#agentModal .modal { max-width:520px; box-shadow:8px 8px 0 var(--magenta); }
+.agent-form-row { display:flex; gap:12px; }
+.agent-form-row .form-field { flex:1; }
+
+/* CODE MODAL */
+#codeModal .modal { max-width:1100px; height:88vh; flex-direction:row; box-shadow:8px 8px 0 var(--accent); }
+.code-sidebar { width:260px; min-width:260px; border-right:1px solid var(--border); display:flex; flex-direction:column; background:#0a0a0a; flex-shrink:0; }
+.code-sidebar-head { padding:12px 14px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; }
+.code-sidebar-head h2 { font-family:'Syne',sans-serif; font-weight:700; font-size:13px; text-transform:uppercase; letter-spacing:.1em; display:flex; align-items:center; gap:6px; }
+.code-version-list { flex:1; overflow-y:auto; padding:10px; display:flex; flex-direction:column; gap:6px; }
+.code-version-item { padding:10px; border:1px solid var(--border); cursor:pointer; }
+.code-version-item:hover { border-color:#555; }
+.code-version-item.active { border-color:var(--accent); background:#1a1a1a; }
+.code-version-num { font-family:'Syne',sans-serif; font-weight:700; font-size:11px; text-transform:uppercase; display:flex; align-items:center; gap:6px; }
+.code-version-time { font-size:10px; color:#888; margin-top:3px; }
+.code-version-agent { font-size:10px; text-transform:uppercase; font-weight:700; margin-top:4px; display:flex; align-items:center; gap:4px; }
+.code-main { flex:1; display:flex; flex-direction:column; min-width:0; }
+.code-toolbar { padding:10px 14px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; background:var(--bg-panel); flex-shrink:0; }
+.code-tabs { display:flex; gap:6px; }
+.code-tab { padding:5px 12px; font-size:10px; font-family:'Syne',sans-serif; font-weight:700; text-transform:uppercase; letter-spacing:.07em; border:1px solid var(--border); color:var(--text-muted); }
+.code-tab.active { background:var(--accent); color:#000; border-color:var(--accent); }
+.code-tab:hover:not(.active) { color:#fff; }
+.code-actions { display:flex; gap:8px; align-items:center; }
+.code-action-btn { font-size:10px; color:var(--text-muted); border:1px solid var(--border); padding:4px 10px; display:flex; align-items:center; gap:4px; }
+.code-action-btn:hover { color:#fff; border-color:#555; }
+.code-content { flex:1; overflow:auto; position:relative; background:#0a0a0a; }
+.code-content pre { padding:20px; margin:0; font-size:12px; line-height:1.7; white-space:pre-wrap; word-break:break-all; min-height:100%; background:transparent !important; }
+.code-content iframe { width:100%; height:100%; border:none; background:#fff; }
+.diff-analytics { display:flex; gap:16px; padding:12px 16px; background:#111; border-bottom:1px solid var(--border); flex-shrink:0; font-size:11px; font-weight:700; }
+.diff-added { color:#5af; }
+.diff-removed { color:#f55; }
+.diff-line { padding:3px 10px; font-family:'JetBrains Mono',monospace; font-size:11px; white-space:pre-wrap; word-break:break-all; }
+.diff-line.added { background:rgba(0,255,100,.08); color:#7f7; border-left:3px solid #3a3; }
+.diff-line.removed { background:rgba(255,50,50,.08); color:#f77; border-left:3px solid #a33; text-decoration:line-through; opacity:.7; }
+.diff-line.unchanged { color:#888; }
+.code-empty { display:flex; align-items:center; justify-content:center; height:100%; color:var(--text-muted); font-family:'Syne',sans-serif; text-transform:uppercase; letter-spacing:.15em; font-size:13px; }
+
+/* LOGIN */
+#loginScreen { display:none; position:fixed; inset:0; z-index:400; background:var(--bg-main); align-items:center; justify-content:center; padding:20px; }
+#loginScreen.show { display:flex; }
+.login-box { background:var(--bg-panel); border:1px solid var(--border); padding:36px 32px; max-width:400px; width:100%; text-align:center; box-shadow:12px 12px 0 var(--accent); }
+.login-logo { font-family:'Syne',sans-serif; font-weight:800; font-size:32px; color:#fff; margin-bottom:4px; }
+.login-sub { font-size:10px; color:var(--text-muted); text-transform:uppercase; letter-spacing:.2em; margin-bottom:28px; }
+.divider { display:flex; align-items:center; gap:12px; color:#444; font-size:10px; text-transform:uppercase; margin:14px 0; }
+.divider::before,.divider::after { content:''; flex:1; height:1px; background:var(--border); }
+.login-google { width:100%; background:#fff; color:#000; padding:14px; font-family:'Syne',sans-serif; font-weight:700; text-transform:uppercase; letter-spacing:.1em; border:1px solid var(--border); display:flex; align-items:center; justify-content:center; gap:10px; margin-bottom:14px; }
+.login-google:hover { background:#e0e0e0; }
+.login-note { font-size:10px; color:#555; text-transform:uppercase; letter-spacing:.05em; margin-top:20px; }
+
+/* PIPELINE POPUP */
+#pipelinePopup { display:none; position:fixed; inset:0; z-index:250; background:rgba(0,0,0,.9); backdrop-filter:blur(6px); align-items:center; justify-content:center; padding:20px; }
+#pipelinePopup.show { display:flex; }
+.pipeline-box { background:var(--bg-panel); border:1px solid var(--border); padding:36px; max-width:480px; width:100%; text-align:center; box-shadow:8px 8px 0 var(--cyan); }
+.pipeline-icon { width:64px; height:64px; border-radius:50%; background:rgba(0,255,204,.15); display:flex; align-items:center; justify-content:center; margin:0 auto 20px; color:var(--cyan); }
+.pipeline-title { font-family:'Syne',sans-serif; font-weight:700; font-size:20px; text-transform:uppercase; letter-spacing:.15em; margin-bottom:8px; }
+.pipeline-desc { font-size:12px; color:#a0a0a0; line-height:1.7; margin-bottom:28px; }
+.pipeline-btns { display:flex; gap:12px; }
+.pipeline-btns .btn-close { flex:1; padding:12px; border:1px solid #333; font-family:'Syne',sans-serif; font-weight:700; text-transform:uppercase; letter-spacing:.08em; }
+.pipeline-btns .btn-close:hover { border-color:#fff; }
+.pipeline-btns .btn-view { flex:2; padding:12px; background:var(--cyan); color:#000; border:1px solid var(--cyan); font-family:'Syne',sans-serif; font-weight:700; text-transform:uppercase; letter-spacing:.08em; display:flex; align-items:center; justify-content:center; gap:8px; box-shadow:4px 4px 0 var(--cyan); }
+.pipeline-btns .btn-view:hover { background:#33ffdd; }
+
+/* FEATURE PANEL */
+#featurePanel { display:none; padding:12px 20px; border-top:1px solid var(--border); background:#0c0c0c; flex-shrink:0; }
+#featurePanel.show { display:block; }
+.feature-header { display:flex; justify-content:space-between; align-items:center; font-size:10px; color:var(--text-muted); text-transform:uppercase; font-weight:700; letter-spacing:.1em; margin-bottom:10px; }
+.feature-header button { display:flex; align-items:center; gap:4px; }
+.feature-header button:hover { color:var(--cyan); }
+.feature-input-row { display:flex; gap:8px; }
+.feature-input-row input { flex:1; background:#1a1a1a; border:1px solid var(--border); padding:10px 12px; font-size:12px; outline:none; }
+.feature-input-row input:focus { border-color:var(--cyan); }
+#runPipelineBtn { background:var(--cyan); color:#000; padding:10px 20px; font-family:'Syne',sans-serif; font-weight:700; text-transform:uppercase; letter-spacing:.08em; border:1px solid var(--cyan); display:flex; align-items:center; gap:6px; }
+#runPipelineBtn:hover:not(:disabled) { background:#33ffdd; }
+#runPipelineBtn:disabled { opacity:.4; cursor:not-allowed; }
+
+/* HANDOFF BAR */
+#handoffBar { display:none; padding:10px 20px; border-top:1px solid var(--border); background:#0c0c0c; flex-shrink:0; align-items:center; justify-content:space-between; }
+#handoffBar.show { display:flex; }
+.handoff-label { font-size:10px; color:var(--text-muted); text-transform:uppercase; font-weight:700; letter-spacing:.1em; display:flex; align-items:center; gap:6px; }
+.handoff-btn { padding:7px 14px; background:#1a1a1a; border:1px solid #333; font-size:10px; font-family:'Syne',sans-serif; font-weight:700; text-transform:uppercase; letter-spacing:.08em; display:flex; align-items:center; gap:6px; }
+.handoff-btn:hover:not(:disabled) { border-color:var(--accent); color:var(--accent); }
+.handoff-btn:disabled { opacity:.4; cursor:not-allowed; }
+
+/* MOBILE MENU BTN */
+#menuToggle { display:none; color:#fff; padding:6px; }
+.sidebar-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.8); z-index:49; }
+
+/* SVG ICONS (inline) */
+svg { display:inline-block; vertical-align:middle; }
+
+@media (max-width:768px) {
+  #sidebar { position:fixed; top:0; left:0; height:100%; transform:translateX(-100%); transition:transform .3s; z-index:50; width:260px; min-width:260px; }
+  #sidebar.open { transform:translateX(0); }
+  .sidebar-overlay.show { display:block; }
+  #menuToggle { display:flex; }
+  #chatArea { padding:16px; }
+  .msg-bubble { max-width:95%; }
+  #codeModal .modal { flex-direction:column; height:92vh; }
+  .code-sidebar { width:100%; min-width:unset; height:140px; border-right:none; border-bottom:1px solid var(--border); }
+  .code-version-list { flex-direction:row; overflow-x:auto; overflow-y:hidden; padding:8px; }
+  .code-version-item { min-width:120px; }
+  .header-proj { max-width:100px; }
+}
+</style>
 </head>
 <body>
-  <div id="root"></div>
 
-  <!-- Script utama aplikasi React -->
-  <script type="text/babel" data-type="module">
-    // Import React dan ReactDOM dari esm.sh
-    import React, { useState, useEffect, useRef, useCallback } from 'https://esm.sh/react@18.2.0';
-    import { createRoot } from 'https://esm.sh/react-dom@18.2.0/client';
-    
-    // Import Icon dari Lucide React
-    import { 
-      Terminal, PenTool, CheckSquare, ShieldAlert, 
-      Database, Users, Send, Loader2, Code2, Layers, Cpu,
-      Folder, Plus, X, Clock, ArrowRight, Copy, Check,
-      GitCommit, GitCompare, History, FileCode2, AlertTriangle, 
-      PlusCircle, Lightbulb, Zap, CheckCircle2, Play,
-      Key, Trash2, Edit2, Upload, StopCircle, Eye, Menu, AlertCircle, Download,
-      Mic, Search, Share2, BarChart2, Settings, LogIn, Filter, Pin, Command, FileText
-    } from 'https://esm.sh/lucide-react@0.292.0';
+<!-- LOGIN -->
+<div id="loginScreen" class="show">
+  <div class="login-box">
+    <div class="login-logo glitch">NEXUS-6</div>
+    <div class="login-sub">Enterprise AI Platform v7.0</div>
+    <button class="login-google" onclick="doLogin()">
+      <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+      Masuk dengan Gmail
+    </button>
+    <div class="divider">atau</div>
+    <div class="form-field"><input type="email" class="form-input" placeholder="Email" autocomplete="email"></div>
+    <div class="form-field"><input type="password" class="form-input" placeholder="Password" autocomplete="current-password"></div>
+    <button class="btn-primary" onclick="doLogin()">Login ke Canvas</button>
+    <p class="login-note">Demo Mode — Data tersimpan lokal di browser Anda</p>
+  </div>
+</div>
 
-    // --- GOOGLE APPS SCRIPT INTEGRATION ---
-    const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzr1aGZfm-lZdxWQ9zxX5IG20YQKTV45Ydr5xqE9plVFiQ1Gaa7eTUwwf9bhPoFL1cA/exec';
+<!-- TOAST -->
+<div id="toast">
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+  <span id="toastMsg"></span>
+</div>
 
-    const cloudStore = {
-      getProjects: async () => {
-        try {
-          const res = await fetch(APPS_SCRIPT_URL);
-          if (!res.ok) throw new Error("Gagal mengambil data dari Google Sheets");
-          const data = await res.json();
-          return data.map(p => ({
-            id: p.id,
-            name: p.name,
-            updatedAt: new Date(p.updatedAt).getTime() || Date.now(),
-            messages: p.data?.messages || {},
-            codeVersions: p.data?.codeVersions || [],
-            analytics: p.data?.analytics || { runs: 0, tokens: 0, timeSpent: 0 },
-            knowledgeBase: p.data?.knowledgeBase || []
-          }));
-        } catch (e) {
-          console.error("Cloud Error:", e);
-          return [];
-        }
-      },
-      saveProject: async (project) => {
-        try {
-          const payload = {
-            id: project.id,
-            name: project.name,
-            data: {
-              messages: project.messages,
-              codeVersions: project.codeVersions,
-              analytics: project.analytics,
-              knowledgeBase: project.knowledgeBase
-            }
-          };
-          
-          await fetch(APPS_SCRIPT_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-            body: JSON.stringify(payload)
-          });
-          console.log(`[Cloud Sync]: Project ${project.name} tersimpan.`);
-        } catch (e) {
-          console.error("Save Cloud Error:", e);
-        }
-      }
-    };
+<!-- LOCK SCREEN -->
+<div id="lockScreen">
+  <div class="lock-box">
+    <div class="lock-icon pulse">
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+    </div>
+    <div class="lock-title">Sistem Terkunci</div>
+    <div class="lock-badge">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+      <span id="lockModel">Gemini Flash Aktif</span>
+    </div>
+    <div class="lock-status">
+      <svg class="spin" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 11-6.219-8.56"/></svg>
+      <span id="lockStatus">Memproses Request...</span>
+    </div>
+    <button id="lockAbort" onclick="abortPipeline()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><rect x="9" y="9" width="6" height="6"/></svg>
+      Batalkan Pipeline
+    </button>
+  </div>
+</div>
 
-    const DEFAULT_AGENTS = [
-      { id: 'planner', name: 'Architect / Planner', iconName: 'Layers', color: '#ccff00', desc: 'Merancang arsitektur sistem.', model: 'pro' },
-      { id: 'frontend', name: 'Frontend Aesthetic', iconName: 'PenTool', color: '#ff00ff', desc: 'Desain UI/UX & Implementasi visual.', model: 'flash' },
-      { id: 'feature', name: 'Feature Expander', iconName: 'PlusCircle', color: '#00ffcc', desc: 'Penambahan fitur inovatif baru.', model: 'pro' },
-      { id: 'bugtracker', name: 'Bug Tracker', iconName: 'AlertTriangle', color: '#ff3333', desc: 'Perbaikan error & bug squashing.', model: 'flash' },
-      { id: 'reviewer', name: 'Code Reviewer', iconName: 'CheckSquare', color: '#00ffff', desc: 'Memastikan standar kualitas kode (PR).', model: 'pro' },
-      { id: 'security', name: 'SecOps Scanner', iconName: 'ShieldAlert', color: '#ff9900', desc: 'Pemindaian kerentanan (XSS, Injection).', model: 'pro' },
-      { id: 'evaluator', name: 'Evaluator (Auto-QA)', iconName: 'CheckCircle', color: '#00ff55', desc: 'Verifikasi akhir dari pipeline.', model: 'flash' }
-    ];
+<!-- SIDEBAR OVERLAY (mobile) -->
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
 
-    const TEMPLATES = [
-      { trigger: '/ui', title: 'Buat UI Komponen', text: 'Tolong buatkan komponen UI untuk [NAMA FITUR] menggunakan React & Tailwind dengan estetika Brutalist modern.' },
-      { trigger: '/refactor', title: 'Refactor Kode', text: 'Tolong refactor kode terakhir agar lebih bersih, efisien, dan modular. Terapkan prinsip SOLID.' },
-      { trigger: '/fix', title: 'Cari Bug / Error', text: 'Saya mendapatkan error ini: \n\n```\n[PASTE ERROR]\n```\n\nTolong analisis dan berikan perbaikannya.' }
-    ];
+<!-- APP -->
+<div id="app" style="display:none;">
 
-    const generateId = () => Date.now().toString(36) + '-' + Math.random().toString(36).substring(2, 9);
-
-    const IconRenderer = ({ name, ...props }) => {
-      const icons = { Layers, PenTool, PlusCircle, AlertTriangle, CheckSquare, ShieldAlert, Database, Users, Code2, Zap, Terminal, CheckCircle: CheckCircle2 };
-      const Icon = icons[name] || Terminal;
-      return <Icon {...props} />;
-    };
-
-    const CodeBlock = ({ code, language, filename }) => {
-      const codeRef = useRef(null);
-      useEffect(() => {
-        if (window.hljs && codeRef.current) {
-          delete codeRef.current.dataset.highlighted;
-          window.hljs.highlightElement(codeRef.current);
-        }
-      }, [code]);
-      return (
-        <div className="bg-[#0a0a0a] border border-[#2a2a2a] my-3 brutal-border overflow-hidden rounded-sm">
-          {(filename || language) && (
-            <div className="bg-[#111] px-3 py-1.5 border-b border-[#2a2a2a] flex justify-between items-center text-[10px] text-[#888] font-bold uppercase tracking-wider">
-              <span>{filename || 'Code Block'}</span>
-              <span>{language}</span>
-            </div>
-          )}
-          <pre className="p-4 overflow-x-auto text-sm text-[#e0e0e0] m-0"><code ref={codeRef} className={`language-${language || 'javascript'}`}>{code}</code></pre>
+  <!-- SIDEBAR -->
+  <div id="sidebar">
+    <div class="sidebar-head">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <div class="logo glitch">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:var(--accent)"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+          NEXUS-6
         </div>
-      );
-    };
+        <button onclick="closeSidebar()" style="display:none;color:#fff;padding:4px;" id="sidebarClose">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div style="display:flex;gap:6px;margin-top:8px;">
+        <span class="badge-pro">PRO</span>
+        <span class="badge-v">v7.0</span>
+      </div>
+      <div class="sidebar-nav">
+        <button onclick="openModal('projectModal')">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
+          Projects
+        </button>
+        <button onclick="openModal('analyticsModal')">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+          Analytics
+        </button>
+      </div>
+    </div>
+    <div class="agent-list">
+      <div class="agent-list-label">
+        <span>Agen Aktif</span>
+        <button onclick="openModal('agentModal')" title="Konfigurasi Agen">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 010 14.14M4.93 4.93a10 10 0 000 14.14"/></svg>
+        </button>
+      </div>
+      <div id="agentButtons"></div>
+    </div>
+    <div class="sidebar-foot">
+      <button class="api-key-btn" onclick="openModal('apiModal')">
+        <span style="display:flex;align-items:center;gap:6px;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 11-7.778 7.778 5.5 5.5 0 017.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
+          Set API Key
+        </span>
+        <span id="apiKeyStatus"></span>
+      </button>
+    </div>
+  </div>
 
-    // FUNGSI RENDER DIEKSTRAK KE LUAR AGAR BISA DIAKSES GLOBAL TANPA REFERENCE ERROR
-    const renderMessageContent = (content) => {
-      const parts = content.split(/(```[\s\S]*?```)/g);
-      return parts.map((part, i) => {
-        if (part.startsWith('```') && part.endsWith('```')) {
-          const lines = part.slice(3, -3).split('\n');
-          const firstLine = lines.shift() || '';
-          const [lang, filename] = firstLine.split(':');
-          return <CodeBlock key={i} code={lines.join('\n')} language={lang?.trim()} filename={filename?.trim()} />;
-        }
-        
-        let safeText = part.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); 
-        safeText = safeText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>'); 
-        safeText = safeText.replace(/`(.*?)`/g, '<code class="bg-[#1a1a1a] text-[var(--accent)] px-1 py-0.5 rounded text-sm">$1</code>'); 
-        return <div key={i} dangerouslySetInnerHTML={{ __html: safeText }} className="mb-2 break-words leading-relaxed" />;
-      });
-    };
+  <!-- MAIN -->
+  <div id="main">
 
-    const TypewriterText = ({ text, onComplete }) => {
-      const [displayedText, setDisplayedText] = useState('');
-      
-      useEffect(() => {
-        let i = 0;
-        const chunkSize = Math.max(1, Math.floor(text.length / 50)); 
-        const interval = setInterval(() => {
-          setDisplayedText(text.slice(0, i));
-          i += chunkSize;
-          if (i > text.length) {
-            setDisplayedText(text);
-            clearInterval(interval);
-            if(onComplete) onComplete();
-          }
-        }, 20); 
-        
-        return () => clearInterval(interval);
-      }, [text]);
-
-      return <>{renderMessageContent(displayedText)}</>;
-    };
-
-    function App() {
-      const [apiKey, setApiKey] = useState(() => localStorage.getItem('nexus_apikey') || '');
-      const [isAuthenticated, setIsAuthenticated] = useState(false);
-      const [isCloudSyncing, setIsCloudSyncing] = useState(false);
-      
-      const [agents, setAgents] = useState(DEFAULT_AGENTS);
-      const [projects, setProjects] = useState([]);
-      const [activeProjectId, setActiveProjectId] = useState(null);
-      const [activeAgentId, setActiveAgentId] = useState('planner');
-      
-      const [input, setInput] = useState('');
-      const [isTyping, setIsTyping] = useState(false);
-      const [searchQuery, setSearchQuery] = useState('');
-      const [filterMode, setFilterMode] = useState('all'); 
-      const [slashMenuOpen, setSlashMenuOpen] = useState(false);
-      const [isListening, setIsListening] = useState(false);
-      
-      const [newProjectName, setNewProjectName] = useState('');
-      const [editingProjectId, setEditingProjectId] = useState(null);
-      const [editProjectName, setEditProjectName] = useState('');
-      const [copiedId, setCopiedId] = useState(null);
-      
-      const [showProjectModal, setShowProjectModal] = useState(false);
-      const [showCodeModal, setShowCodeModal] = useState(false);
-      const [showAgentModal, setShowAgentModal] = useState(false);
-      const [showAnalyticsModal, setShowAnalyticsModal] = useState(false);
-      const [showCommandPalette, setShowCommandPalette] = useState(false);
-      const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-      const [toast, setToast] = useState(null);
-
-      const [selectedVersionId, setSelectedVersionId] = useState(null);
-      const [codeViewMode, setCodeViewMode] = useState('code'); 
-      const [activeFileTab, setActiveFileTab] = useState(0);
-      
-      const [isAutoRunning, setIsAutoRunning] = useState(false);
-      const [autoStatusText, setAutoStatusText] = useState('');
-      const [showCompletePopup, setShowCompletePopup] = useState(false);
-      const autoAbortRef = useRef(false);
-
-      const messagesEndRef = useRef(null);
-      const textareaRef = useRef(null);
-      const fileInputRef = useRef(null); 
-
-      const activeProject = projects.find(p => p.id === activeProjectId);
-      const activeAgent = agents.find(a => a.id === activeAgentId) || agents[0];
-      
-      // BUG FIXED: Perlindungan Optional Chaining ?. ditambahkan untuk menghindari "Cannot read properties of undefined"
-      const currentChatMsgs = activeProject?.messages?.[activeAgentId] || [];
-      const approxTokens = Math.floor(JSON.stringify(currentChatMsgs).length / 4);
-      const isHighContext = approxTokens > 15000;
-
-      // INITIALIZATION & CLOUD PULL
-      useEffect(() => {
-        if (!isAuthenticated) return;
-
-        const loadData = async () => {
-          const savedAgents = localStorage.getItem('nexus_agents');
-          const loadedAgents = savedAgents ? JSON.parse(savedAgents) : DEFAULT_AGENTS;
-          if (savedAgents) setAgents(loadedAgents);
-          
-          setIsCloudSyncing(true);
-          let savedProjects = await cloudStore.getProjects();
-          
-          if (savedProjects.length === 0) {
-            const initProj = { 
-              id: `proj-${generateId()}`, name: 'Project Alpha', updatedAt: Date.now(), 
-              messages: {}, codeVersions: [], analytics: { runs: 0, tokens: 0, timeSpent: 0 }, knowledgeBase: [] 
-            };
-            loadedAgents.forEach(a => initProj.messages[a.id] = [{ id: generateId(), role: 'system', text: `**${a.name}** online. Cloud DB Google Sheets Terhubung.\nSiap mengeksekusi instruksi.`, timestamp: new Date().toLocaleTimeString(), isStreaming: false }]);
-            savedProjects = [initProj];
-            cloudStore.saveProject(initProj); 
-          }
-          setProjects(savedProjects);
-          setActiveProjectId(savedProjects[0].id);
-          setIsCloudSyncing(false);
-        };
-        loadData();
-      }, [isAuthenticated]);
-
-      // DEBOUNCED CLOUD SAVE
-      useEffect(() => {
-        if (!isAuthenticated || projects.length === 0 || isCloudSyncing) return;
-        setIsCloudSyncing(true);
-        const timeoutId = setTimeout(() => {
-          const projToSave = projects.find(p => p.id === activeProjectId);
-          if (projToSave) {
-            cloudStore.saveProject(projToSave).then(() => setIsCloudSyncing(false));
-          }
-        }, 2500);
-        return () => { clearTimeout(timeoutId); setIsCloudSyncing(false); };
-      }, [projects, activeProjectId]);
-
-      useEffect(() => { if (agents !== DEFAULT_AGENTS) localStorage.setItem('nexus_agents', JSON.stringify(agents)); }, [agents]);
-      useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [activeProject?.messages, isTyping, autoStatusText]);
-
-      useEffect(() => {
-        if(activeAgent) {
-          const hex = activeAgent.color;
-          const r = parseInt(hex.slice(1,3), 16), g = parseInt(hex.slice(3,5), 16), b = parseInt(hex.slice(5,7), 16);
-          document.documentElement.style.setProperty('--agent-tint', `rgba(${r},${g},${b},0.03)`);
-          document.documentElement.style.setProperty('--accent', activeAgent.color);
-        }
-      }, [activeAgent]);
-
-      useEffect(() => {
-        const handleKeyDown = (e) => {
-          const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
-          const cmdKey = isMac ? e.metaKey : e.ctrlKey;
-          if (cmdKey) {
-            if (e.key >= '1' && e.key <= '8') { e.preventDefault(); const idx = parseInt(e.key) - 1; if (agents[idx]) setActiveAgentId(agents[idx].id); }
-            else if (e.key.toLowerCase() === 'k') { e.preventDefault(); setShowCommandPalette(p => !p); }
-            else if (e.key === '/') { e.preventDefault(); setSlashMenuOpen(true); textareaRef.current?.focus(); }
-          }
-        };
-        window.addEventListener('keydown', handleKeyDown);
-        return () => window.removeEventListener('keydown', handleKeyDown);
-      }, [agents]);
-
-      const showToast = useCallback((message, type = 'error') => {
-        setToast({ message, type, id: generateId() });
-        setTimeout(() => setToast(null), 4000);
-      }, []);
-
-      const handleCopyText = (text, id) => {
-        const ta = document.createElement("textarea"); ta.value = text; document.body.appendChild(ta); ta.select();
-        try { document.execCommand('copy'); setCopiedId(id); setTimeout(() => setCopiedId(null), 2000); } 
-        catch (err) { showToast('Gagal menyalin', 'error'); }
-        document.body.removeChild(ta);
-      };
-
-      const handleDownloadCode = (content, ext, filename) => {
-        const blob = new Blob([content], { type: 'text/plain' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a'); a.href = url; a.download = filename || `nexus-export.${ext}`; a.click();
-        URL.revokeObjectURL(url);
-      };
-
-      const formatTime = (ts) => new Intl.DateTimeFormat('id-ID', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(ts));
-
-      const togglePinMessage = (msgId) => {
-        setProjects(prev => prev.map(p => {
-          if(p.id !== activeProjectId) return p;
-          const msgs = p.messages?.[activeAgentId]?.map(m => m.id === msgId ? {...m, pinned: !m.pinned} : m) || [];
-          return {...p, messages: {...p.messages, [activeAgentId]: msgs}};
-        }));
-      };
-
-      const handleFileUpload = (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-        if (file.size > 2000000) return showToast("File terlalu besar (Maks 2MB)", "error"); 
-        
-        const reader = new FileReader();
-        reader.onload = (ev) => {
-          const text = ev.target.result;
-          const chunks = text.split('\n\n').map(c => c.trim()).filter(c => c.length > 20);
-          setProjects(prev => prev.map(p => {
-            if(p.id !== activeProjectId) return p;
-            const newKb = [...(p.knowledgeBase || []), { filename: file.name, chunks }];
-            return {...p, knowledgeBase: newKb};
-          }));
-          showToast(`File ${file.name} berhasil diindeks (RAG)`, "success");
-        };
-        reader.readAsText(file);
-        e.target.value = null; 
-      };
-
-      const retrieveRAGContext = (userQuery) => {
-        const kb = activeProject?.knowledgeBase || [];
-        if (kb.length === 0) return '';
-        const keywords = userQuery.toLowerCase().split(/\W+/).filter(w => w.length > 3);
-        if (keywords.length === 0) return '';
-
-        let matchedChunks = [];
-        kb.forEach(file => {
-          file.chunks.forEach(chunk => {
-            const lowerChunk = chunk.toLowerCase();
-            let score = 0;
-            keywords.forEach(k => { if(lowerChunk.includes(k)) score++; });
-            if(score > 0) matchedChunks.push({ chunk, score, filename: file.filename });
-          });
-        });
-        matchedChunks.sort((a,b) => b.score - a.score);
-        const topChunks = matchedChunks.slice(0, 3); 
-        if (topChunks.length === 0) return '';
-        return `\n[KONTEKS RAG DARI FILE PROJECT]:\n${topChunks.map(c => `(Dari ${c.filename}): ${c.chunk}`).join('\n\n')}\n`;
-      };
-
-      const extractMultiFiles = (text) => {
-        const files = [];
-        const regex = new RegExp('\`\`\`([a-zA-Z0-9]+)?(?:[:]([a-zA-Z0-9._-]+))?\\n([\\s\\S]*?)\`\`\`', 'g');
-        let match;
-        while ((match = regex.exec(text)) !== null) {
-          files.push({
-            language: match[1] || 'text',
-            filename: match[2] || `file-${files.length + 1}.${match[1] === 'html' ? 'html' : match[1] === 'css' ? 'css' : 'js'}`,
-            code: match[3].trim()
-          });
-        }
-        if (files.length === 0) {
-          const rxCode = new RegExp('\`\`\`(?:[a-zA-Z0-9]+)?\\n([\\s\\S]*?)\`\`\`', 'g');
-          let basicMatches = []; let m2;
-          while ((m2 = rxCode.exec(text)) !== null) basicMatches.push(m2[1].trim());
-          basicMatches.forEach((code, i) => files.push({ language: 'javascript', filename: `snippet-${i+1}.js`, code }));
-        }
-        return files;
-      };
-
-      const computeHeuristicDiff = (oldCode, newCode) => {
-        if (!oldCode) return { diffs: newCode.split('\n').map(t => ({ type: 'added', text: t })), added: newCode.split('\n').length, removed: 0 };
-        const oldLines = oldCode.split('\n'), newLines = newCode.split('\n');
-        let diffs = [], i = 0, j = 0, added = 0, removed = 0;
-        while (i < oldLines.length || j < newLines.length) {
-          if (i < oldLines.length && j < newLines.length && oldLines[i] === newLines[j]) {
-            diffs.push({ type: 'unchanged', text: oldLines[i] }); i++; j++;
-          } else {
-            let foundInNew = -1, foundInOld = -1;
-            for (let k = j; k < Math.min(j + 8, newLines.length); k++) { if (oldLines[i] === newLines[k]) { foundInNew = k; break; } }
-            for (let k = i; k < Math.min(i + 8, oldLines.length); k++) { if (oldLines[k] === newLines[j]) { foundInOld = k; break; } }
-            if (foundInNew !== -1 && (foundInOld === -1 || (foundInNew - j) <= (foundInOld - i))) {
-              while (j < foundInNew) { diffs.push({ type: 'added', text: newLines[j] }); added++; j++; }
-            } else if (foundInOld !== -1) {
-              while (i < foundInOld) { diffs.push({ type: 'removed', text: oldLines[i] }); removed++; i++; }
-            } else {
-              if (i < oldLines.length) { diffs.push({ type: 'removed', text: oldLines[i] }); removed++; i++; }
-              if (j < newLines.length) { diffs.push({ type: 'added', text: newLines[j] }); added++; j++; }
-            }
-          }
-        }
-        return { diffs, added, removed };
-      };
-
-      const callGeminiAPI = async (userText, modelPref = 'flash') => {
-        if (!apiKey) throw new Error("Gemini API Key tidak ditemukan!");
-        const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
-        const payload = { contents: [{ parts: [{ text: userText }] }] };
-        for (let i = 0; i < 3; i++) {
-          try {
-            if(autoAbortRef.current) throw new Error("Aborted");
-            const response = await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-            const data = await response.json();
-            if (!response.ok) {
-               if (response.status === 429 && i < 2) { await new Promise(r => setTimeout(r, [1000, 3000][i])); continue; }
-               throw new Error(data.error?.message || `API Error: ${response.status}`);
-            }
-            return data.candidates?.[0]?.content?.parts?.[0]?.text || "Respons kosong.";
-          } catch (err) {
-            if(err.message === "Aborted" || i === 2) throw err;
-          }
-        }
-      };
-
-      const handleSend = async (e, customText = null, overrideHistory = null) => {
-        e?.preventDefault();
-        const textToSend = customText !== null ? customText : input;
-        if (!textToSend.trim() || isAutoRunning) return;
-
-        setSlashMenuOpen(false);
-        const userMsg = { id: generateId(), role: 'user', text: textToSend, timestamp: new Date().toLocaleTimeString() };
-
-        setProjects(prev => prev.map(p => {
-          if(p.id !== activeProjectId) return p;
-          const msgs = overrideHistory || p.messages?.[activeAgentId] || [];
-          return { ...p, messages: { ...p.messages, [activeAgentId]: [...msgs, userMsg] }, updatedAt: Date.now() };
-        }));
-        
-        if (customText === null) { setInput(''); if(textareaRef.current) textareaRef.current.style.height = '60px'; }
-        setIsTyping(true);
-        const startTime = Date.now();
-
-        try {
-          const proj = projects.find(p => p.id === activeProjectId);
-          const historyToUse = overrideHistory || proj.messages?.[activeAgentId] || [];
-          const contextText = historyToUse.map(m => `${m.role === 'user' ? 'User' : 'Agent'}: ${m.text}`).join('\n\n') + `\n\nUser: ${userMsg.text}`;
-          
-          const ragContext = retrieveRAGContext(userMsg.text);
-          const fullPrompt = `[System Instruction: ${activeAgent.prompt}]\n${ragContext}\nKonteks Percakapan:\n${contextText}`;
-          
-          const aiResponseText = await callGeminiAPI(fullPrompt, activeAgent.model);
-
-          const aiMsg = { id: generateId(), role: 'system', text: aiResponseText, timestamp: new Date().toLocaleTimeString(), isStreaming: true };
-          const parsedFiles = extractMultiFiles(aiResponseText);
-          const newCodeVersions = parsedFiles.length > 0 ? [{ id: `v-${generateId()}`, timestamp: Date.now(), agentId: activeAgentId, files: parsedFiles }] : [];
-
-          const timeSpent = Date.now() - startTime;
-          const tokensUsed = Math.floor(fullPrompt.length / 4) + Math.floor(aiResponseText.length / 4);
-
-          setProjects(prev => prev.map(p => p.id === activeProjectId ? {
-            ...p, 
-            messages: { ...p.messages, [activeAgentId]: [...(overrideHistory || p.messages?.[activeAgentId] || []), userMsg, aiMsg] },
-            codeVersions: [...(p.codeVersions || []), ...newCodeVersions], 
-            analytics: { ...p.analytics, tokens: (p.analytics?.tokens || 0) + tokensUsed, timeSpent: (p.analytics?.timeSpent || 0) + timeSpent },
-            updatedAt: Date.now()
-          } : p));
-        } catch (err) {
-          showToast(err.message, 'error');
-        } finally { setIsTyping(false); }
-      };
-
-      const handleEditMessage = (msgId) => {
-        const proj = projects.find(p => p.id === activeProjectId);
-        const msgs = proj?.messages?.[activeAgentId] || [];
-        const msgIndex = msgs.findIndex(m => m.id === msgId);
-        if(msgIndex === -1) return;
-        
-        setInput(msgs[msgIndex].text);
-        if(textareaRef.current) textareaRef.current.focus();
-        
-        textareaRef.current.dataset.overrideId = msgId;
-        textareaRef.current.dataset.truncatedStr = JSON.stringify(msgs.slice(0, msgIndex));
-      };
-
-      const handleInputKeyDown = (e) => {
-        if (e.key === '/') setSlashMenuOpen(true);
-        else if (e.key === 'Escape' || e.key === 'Backspace' && input === '') setSlashMenuOpen(false);
-        
-        if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
-          e.preventDefault();
-          let override = null;
-          if (textareaRef.current?.dataset.overrideId) {
-            override = JSON.parse(textareaRef.current.dataset.truncatedStr);
-            delete textareaRef.current.dataset.overrideId;
-            delete textareaRef.current.dataset.truncatedStr;
-          }
-          handleSend(e, null, override);
-        }
-      };
-
-      const startAutoPipeline = async () => {
-        const featureRequest = document.getElementById('autoFeatureInput').value;
-        if (!featureRequest.trim() || isAutoRunning) return;
-        setIsAutoRunning(true); autoAbortRef.current = false;
-        document.getElementById('autoFeatureInput').value = '';
-
-        const initUserMsg = { id: generateId(), role: 'user', text: `[AUTO-PIPELINE REQUEST]: ${featureRequest}`, timestamp: new Date().toLocaleTimeString() };
-        setProjects(prev => prev.map(p => p.id === activeProjectId ? { ...p, messages: { ...p.messages, feature: [...(p.messages.feature || []), initUserMsg] } } : p));
-
-        const autoChain = ['planner', 'frontend', 'reviewer', 'security', 'evaluator'];
-        let lastOutput = featureRequest;
-        let isFirst = true;
-        let totalTokens = 0, pipelineTime = Date.now();
-
-        for (const agentId of autoChain) {
-          if (autoAbortRef.current) break;
-          const targetAgent = agents.find(a => a.id === agentId);
-          if(!targetAgent) continue;
-          
-          setActiveAgentId(agentId); setAutoStatusText(`Menghubungi ${targetAgent.name}...`); setIsTyping(true);
-          
-          const forwardPrompt = isFirst
-            ? `[SISTEM OTOMATIS]: Spesifikasi fitur:\n"${lastOutput}"\n\nTolong buat Rencana Arsitektur.`
-            : agentId === 'evaluator' 
-              ? `[EVALUATOR]: Analisis hasil akhir ini. Jika ada bug kritis atau UI buruk, katakan REVISE beserta perbaikannya. Jika aman, katakan PASS.\n\nHasil Akhir:\n"""\n${lastOutput}\n"""`
-              : `[HANDOFF]: Lanjutkan pengembangan dari agen sebelumnya:\n"""\n${lastOutput}\n"""`;
-          
-          isFirst = false;
-          const userMsg = { id: generateId(), role: 'user', text: forwardPrompt, timestamp: new Date().toLocaleTimeString() };
-          setProjects(prev => prev.map(p => p.id === activeProjectId ? { ...p, messages: { ...p.messages, [agentId]: [...(p.messages?.[agentId] || []), userMsg] } } : p));
-          
-          try {
-            const fullPrompt = `[System: ${targetAgent.prompt}]\n\n${userMsg.text}`;
-            const aiResponseText = await callGeminiAPI(fullPrompt, targetAgent.model); 
-            if (autoAbortRef.current) throw new Error("Aborted");
-
-            const aiMsg = { id: generateId(), role: 'system', text: aiResponseText, timestamp: new Date().toLocaleTimeString(), isStreaming: true };
-            const parsedFiles = extractMultiFiles(aiResponseText);
-            const newCodeVersions = parsedFiles.length > 0 ? [{ id: `v-${generateId()}`, timestamp: Date.now(), agentId, files: parsedFiles }] : [];
-
-            totalTokens += Math.floor(fullPrompt.length / 4) + Math.floor(aiResponseText.length / 4);
-
-            setProjects(prev => prev.map(p => p.id === activeProjectId ? { 
-              ...p, messages: { ...p.messages, [agentId]: [...(p.messages?.[agentId] || []), aiMsg] },
-              codeVersions: [...(p.codeVersions || []), ...newCodeVersions], updatedAt: Date.now()
-            } : p));
-            lastOutput = aiResponseText;
-
-            if (agentId === 'evaluator' && aiResponseText.includes('REVISE')) {
-               showToast("Evaluator menemukan masalah, menginisiasi revisi...", "warning");
-               autoChain.push('frontend'); 
-            }
-
-          } catch (err) {
-            if(err.message !== "Aborted") showToast(err.message, 'error'); break;
-          } finally { setIsTyping(false); }
-          await new Promise(r => setTimeout(r, 1500)); 
-        }
-
-        setIsAutoRunning(false); setAutoStatusText('');
-        
-        if (!autoAbortRef.current) {
-          setProjects(prev => prev.map(p => p.id === activeProjectId ? { 
-            ...p, analytics: { ...p.analytics, runs: (p.analytics?.runs || 0) + 1, tokens: (p.analytics?.tokens || 0) + totalTokens, timeSpent: (p.analytics?.timeSpent || 0) + (Date.now() - pipelineTime) } 
-          } : p));
-          setShowCompletePopup(true);
-        }
-      };
-
-      const handleCreateProject = (e) => {
-        e.preventDefault();
-        if (!newProjectName.trim()) return;
-        const initProj = { id: `proj-${generateId()}`, name: newProjectName.trim(), updatedAt: Date.now(), messages: {}, codeVersions: [], analytics: { runs: 0, tokens: 0, timeSpent: 0 }, knowledgeBase: [] };
-        agents.forEach(a => initProj.messages[a.id] = [{ id: generateId(), role: 'system', text: `**${a.name}** online. Cloud DB Terhubung.\nSiap mengeksekusi instruksi.`, timestamp: new Date().toLocaleTimeString(), isStreaming: false }]);
-        setProjects(prev => [initProj, ...prev]);
-        setActiveProjectId(initProj.id);
-        setNewProjectName('');
-      };
-
-      if (!isAuthenticated) {
-        return (
-          <div className="flex h-screen w-full items-center justify-center bg-[#070707] relative overflow-hidden font-mono">
-            <div className="bg-[#121212] brutal-border p-8 max-w-md w-full shadow-[12px_12px_0px_#ccff00] z-10 flex flex-col items-center text-center">
-              <Cpu size={56} className="text-[#ccff00] mb-4" />
-              <h1 className="font-display font-bold text-3xl mb-1 glitch-text text-white">NEXUS-6</h1>
-              <p className="text-[#888] text-xs uppercase tracking-widest mb-8">Cloud Edition (GitHub Pages)</p>
-              
-              <div className="text-left w-full mb-6 p-4 bg-[#111] border border-[#333] text-xs text-[#888]">
-                 <div className="flex items-center gap-2 mb-2 text-[#00ffcc] font-bold"><Database size={14}/> Sinkronisasi Aktif</div>
-                 Sistem ini menembak ke Endpoint Google Sheets Anda secara otomatis.
-              </div>
-
-              <div className="w-full mb-6">
-                <label className="block text-left text-[10px] text-[#888] uppercase tracking-widest mb-2 font-bold">Google Gemini API Key:</label>
-                <input 
-                  type="password" 
-                  value={apiKey} 
-                  onChange={(e) => setApiKey(e.target.value)} 
-                  placeholder="AIzaSy..." 
-                  className="w-full bg-[#0a0a0a] brutal-border p-3 text-sm focus:border-[#ccff00] outline-none text-white"
-                />
-                <p className="text-[9px] text-[#555] text-left mt-2">Dapatkan key gratis di Google AI Studio. Disimpan di Ujung Lokal Browser Anda (LocalStorage).</p>
-              </div>
-
-              <button onClick={() => {
-                if(!apiKey) return alert("API Key wajib diisi!");
-                localStorage.setItem('nexus_apikey', apiKey);
-                setIsAuthenticated(true);
-              }} className="w-full bg-[#ccff00] text-black p-4 font-bold uppercase tracking-wider brutal-border brutal-shadow hover:bg-[#aadd00] transition-all flex items-center justify-center gap-2">
-                <LogIn size={18} /> Masuk ke Canvas
-              </button>
-            </div>
-          </div>
-        );
-      }
-
-      const rawMessages = activeProject?.messages?.[activeAgentId] || [];
-      const currentMessages = rawMessages.filter(m => {
-        if(filterMode === 'code') return m.text.includes('```');
-        if(searchQuery) return m.text.toLowerCase().includes(searchQuery.toLowerCase());
-        return true;
-      });
-      const pinnedMessages = rawMessages.filter(m => m.pinned);
-
-      return (
-        <div className={`flex h-screen w-full relative font-mono text-sm ${isAutoRunning ? 'scanlines' : ''}`}>
-          
-          {/* TOASTS */}
-          {toast && (
-            <div className={`fixed top-4 right-4 z-[200] p-4 brutal-border flex items-center gap-3 toast-enter shadow-lg ${toast.type === 'error' ? 'bg-[#220000] border-[#ff3333] text-[#ff3333]' : toast.type === 'success' ? 'bg-[#002211] border-[#00ffcc] text-[#00ffcc]' : 'bg-[#221100] border-[#ffcc00] text-[#ffcc00]'}`}>
-              <AlertCircle size={20} /> <span className="font-bold text-xs uppercase tracking-wider text-white">{toast.message}</span>
-            </div>
-          )}
-
-          {/* PALETTE */}
-          {showCommandPalette && (
-            <div className="fixed inset-0 z-[150] bg-black/80 backdrop-blur-sm flex items-start justify-center pt-[20vh]" onClick={() => setShowCommandPalette(false)}>
-              <div className="bg-[#121212] brutal-border w-full max-w-lg shadow-[8px_8px_0px_var(--accent)]" onClick={e=>e.stopPropagation()}>
-                 <div className="p-4 border-b border-[#2a2a2a] flex items-center gap-3">
-                   <Command size={18} className="text-[var(--accent)]" />
-                   <input autoFocus type="text" placeholder="Ketik perintah (Switch Agent, Search...)" className="bg-transparent border-none outline-none w-full text-white" />
-                 </div>
-                 <div className="p-2 max-h-[40vh] overflow-y-auto">
-                    <div className="text-[10px] text-[#888] font-bold uppercase tracking-widest px-2 py-1">Agen (Cmd + 1-8)</div>
-                    {agents.map((a, i) => (
-                      <div key={a.id} onClick={() => { setActiveAgentId(a.id); setShowCommandPalette(false); }} className="flex items-center gap-3 p-3 hover:bg-[#1a1a1a] cursor-pointer">
-                        <span style={{color: a.color}}><IconRenderer name={a.iconName} size={14}/></span>
-                        <span className="text-sm font-bold text-white">{a.name}</span>
-                        <span className="ml-auto text-[10px] text-[#555] bg-[#0a0a0a] px-1.5 py-0.5 brutal-border">Cmd+{i+1}</span>
-                      </div>
-                    ))}
-                 </div>
-              </div>
-            </div>
-          )}
-
-          {/* SIDEBAR */}
-          {isSidebarOpen && <div className="fixed inset-0 bg-black/80 z-[40] md:hidden" onClick={() => setIsSidebarOpen(false)} />}
-          <div className={`fixed md:relative top-0 left-0 h-full w-[280px] md:w-80 brutal-border bg-[#121212] flex flex-col z-[50] transition-transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}>
-            <div className="p-5 border-b border-[#2a2a2a] shrink-0">
-              <div className="flex justify-between items-center mb-2">
-                <h1 className="font-display font-bold text-xl md:text-2xl tracking-tighter flex items-center gap-2 glitch-text text-white"><Cpu className="text-[var(--accent)]" /> NEXUS-6</h1>
-                <button onClick={() => setIsSidebarOpen(false)} className="md:hidden text-white"><X size={20}/></button>
-              </div>
-              <p className="text-[9px] text-[#888] uppercase tracking-widest mt-1">Multi-Agent Workspace v7.0</p>
-              <div className="flex items-center justify-between mt-4">
-                 <button onClick={() => setShowProjectModal(true)} className="text-[10px] uppercase text-[#888] hover:text-[var(--accent)] flex items-center gap-1"><Folder size={12}/> Projects</button>
-                 <button onClick={() => setShowAnalyticsModal(true)} className="text-[10px] uppercase text-[#888] hover:text-[var(--accent)] flex items-center gap-1"><BarChart2 size={12}/> Analytics</button>
-                 {isCloudSyncing && <Loader2 size={12} className="text-[#00ffcc] animate-spin" title="Syncing to Cloud..." />}
-              </div>
-            </div>
-            
-            <div className="flex-1 overflow-y-auto p-4 space-y-2 pb-20">
-              <div className="flex justify-between items-center mb-3">
-                 <span className="text-[10px] text-[#888] uppercase tracking-[0.2em] font-bold">Agen Aktif</span>
-                 <button onClick={() => setShowAgentModal(true)} className="text-[#888] hover:text-[#ccff00]" title="Custom Agent Builder"><Settings size={14}/></button>
-              </div>
-              {agents.map((agent) => (
-                <button key={agent.id} onClick={() => { setActiveAgentId(agent.id); setIsSidebarOpen(false); }} className={`w-full text-left p-3 brutal-border flex flex-col gap-1 agent-btn group ${activeAgentId === agent.id ? 'active brutal-shadow' : 'bg-[#0a0a0a] hover:bg-[#111111]'}`}>
-                  <div className="flex items-center gap-2 justify-between">
-                    <div className="flex items-center gap-2">
-                      <span style={{ color: activeAgentId === agent.id ? '#000' : agent.color }}><IconRenderer name={agent.iconName} size={16}/></span>
-                      <span className="font-display font-bold uppercase text-xs truncate text-white">{agent.name}</span>
-                    </div>
-                  </div>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* MAIN */}
-          <div className="flex-1 flex flex-col bg-transparent w-full min-w-0">
-            <div className="h-16 border-b border-[#2a2a2a] flex items-center justify-between px-4 md:px-6 bg-[#070707]/80 backdrop-blur-md shrink-0">
-              <div className="flex items-center gap-3 min-w-0">
-                 <button onClick={() => setIsSidebarOpen(true)} className="md:hidden text-white"><Menu size={20}/></button>
-                 <h2 className="font-display font-bold uppercase tracking-widest text-white flex items-center gap-2 text-xs md:text-sm truncate">
-                   <span style={{ color: activeAgent.color }}><IconRenderer name={activeAgent.iconName} size={16}/></span>
-                   <span className="hidden sm:inline">{activeAgent.name}</span>
-                   <span className="text-[#888] font-normal normal-case border-l border-[#2a2a2a] pl-2 ml-1 truncate max-w-[120px] md:max-w-xs">{activeProject?.name}</span>
-                 </h2>
-              </div>
-              <div className="flex gap-2">
-                 <button onClick={() => document.getElementById('ragUpload')?.click()} className="hidden sm:flex items-center gap-1 px-3 py-1.5 border border-[#2a2a2a] hover:border-[var(--accent)] hover:text-[var(--accent)] brutal-border text-[10px] font-bold uppercase tracking-wider text-[#888]"><FileText size={12}/> RAG Files ({activeProject?.knowledgeBase?.length || 0})</button>
-                 <input type="file" id="ragUpload" onChange={handleFileUpload} className="hidden" accept=".txt,.md,.js,.json" />
-                 <button onClick={() => setShowCodeModal(true)} className="flex items-center gap-1 px-3 py-1.5 border border-[#2a2a2a] hover:border-[#00ffcc] hover:text-[#00ffcc] brutal-border text-[10px] font-bold uppercase tracking-wider text-[#888] relative">
-                   <Code2 size={12}/> Code
-                 </button>
-              </div>
-            </div>
-
-            {/* Area Obrolan */}
-            <div className="flex-1 overflow-y-auto p-4 md:p-8 space-y-6">
-              {currentMessages.map((msg) => (
-                <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} msg-enter group`}>
-                  <div className={`w-full md:max-w-[85%] p-4 md:p-5 brutal-border relative ${msg.role === 'user' ? 'bg-[#1a1a1a] border-[#333]' : 'bg-[#0a0a0a] border-[var(--border-color)]'}`} style={msg.role === 'system' ? { borderLeftColor: activeAgent.color, borderLeftWidth: '3px' } : {}}>
-                    <div className="flex justify-between items-center mb-3">
-                      <span className="text-[10px] uppercase tracking-widest font-bold" style={{ color: msg.role === 'system' ? activeAgent.color : '#888' }}>
-                        {msg.role === 'user' ? 'Anda' : activeAgent.name}
-                      </span>
-                      <div className="flex items-center gap-3">
-                        {msg.role === 'system' && (
-                          <button onClick={() => handleCopyText(msg.text, msg.id)} className="opacity-0 group-hover:opacity-100 text-[#888] hover:text-[#ccff00] flex items-center gap-1 text-[10px] uppercase"><Copy size={12}/> Salin</button>
-                        )}
-                        <span className="text-[10px] text-[#555]">{msg.timestamp}</span>
-                      </div>
-                    </div>
-                    <div className="text-sm text-[#e0e0e0] overflow-x-hidden">
-                      {msg.role === 'system' ? (
-                         msg.isStreaming ? (
-                           <TypewriterText text={msg.text} onComplete={() => {
-                             setProjects(prev => prev.map(p => p.id === activeProjectId ? {...p, messages: {...p.messages, [activeAgentId]: p.messages[activeAgentId].map(m => m.id === msg.id ? {...m, isStreaming: false} : m)}} : p));
-                           }}/>
-                         ) : renderMessageContent(msg.text)
-                      ) : <div className="whitespace-pre-wrap text-white">{msg.text}</div>}
-                    </div>
-                  </div>
-                </div>
-              ))}
-              {isTyping && (
-                <div className="flex justify-start msg-enter">
-                  <div className="p-4 brutal-border bg-[#0a0a0a] border-l-[3px]" style={{ borderLeftColor: activeAgent.color }}><Loader2 size={14} className="animate-spin inline mr-2" style={{ color: activeAgent.color }} /> <span className="text-[10px] uppercase tracking-widest text-[#888]">Agen sedang menganalisis...</span></div>
-                </div>
-              )}
-              <div ref={messagesEndRef} />
-            </div>
-
-            {/* Input Form */}
-            <div className="p-4 border-t border-[#2a2a2a] bg-[#121212] relative">
-              <form onSubmit={(e) => handleSend(e)} className="flex gap-2 max-w-5xl mx-auto items-end">
-                <div className="flex-1 relative flex items-end bg-[#0a0a0a] brutal-border focus-within:border-[var(--accent)] transition-colors">
-                  <textarea
-                    ref={textareaRef} value={input}
-                    onChange={(e) => { setInput(e.target.value); e.target.style.height = '60px'; e.target.style.height = Math.min(e.target.scrollHeight, 200) + 'px'; }}
-                    onKeyDown={handleInputKeyDown}
-                    placeholder={`Instruksi untuk ${activeAgent.name}...`}
-                    className="w-full bg-transparent p-3 pr-10 text-sm text-white outline-none resize-none min-h-[60px] max-h-[200px]"
-                    rows={1}
-                  />
-                </div>
-                <div className="flex gap-2 shrink-0 h-[60px]">
-                  <button type="submit" disabled={isTyping || !input.trim()} className="bg-[var(--accent)] text-black px-6 brutal-border font-bold disabled:opacity-50 hover:bg-[var(--accent-hover)] hover:brutal-shadow h-full transition-all"><Send size={18} /></button>
-                </div>
-              </form>
-            </div>
-          </div>
-
-          {/* PROJECT MODAL */}
-          {showProjectModal && (
-            <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-              <div className="bg-[#121212] brutal-border w-full max-w-3xl shadow-[8px_8px_0px_var(--accent)] flex flex-col max-h-[85vh]">
-                <div className="p-4 border-b border-[#2a2a2a] flex justify-between items-center bg-[#0a0a0a]">
-                  <h2 className="font-display font-bold text-lg uppercase tracking-widest flex items-center gap-2"><Database className="text-[var(--accent)]" size={18}/> Project Workspace</h2>
-                  <button onClick={() => setShowProjectModal(false)} className="text-[#888] hover:text-white"><X size={20} /></button>
-                </div>
-                <div className="p-6 flex-1 overflow-y-auto space-y-6">
-                  <form onSubmit={handleCreateProject} className="flex gap-3">
-                    <input type="text" value={newProjectName} onChange={(e) => setNewProjectName(e.target.value)} placeholder="Nama Project Baru..." className="flex-1 bg-[#0a0a0a] brutal-border p-3 text-sm focus:border-[var(--accent)] outline-none text-white" />
-                    <button type="submit" disabled={!newProjectName.trim()} className="bg-[var(--accent)] text-black px-6 font-bold font-display uppercase tracking-wider flex items-center gap-2 disabled:opacity-50"><Plus size={16} /> Buat</button>
-                  </form>
-                  <div className="space-y-3">
-                    <div className="flex justify-between text-xs text-[#888] uppercase tracking-widest font-bold mb-2">
-                      <span>Daftar Proyek ({projects.length})</span>
-                    </div>
-                    {projects.map(proj => (
-                      <div key={proj.id} className={`flex flex-col sm:flex-row sm:items-center justify-between p-4 brutal-border gap-4 ${activeProjectId === proj.id ? 'border-[var(--accent)] bg-[#0a0a0a]' : 'border-[#2a2a2a] hover:border-[#666]'}`}>
-                        <div className="flex-1 cursor-pointer" onClick={() => { setActiveProjectId(proj.id); setShowProjectModal(false); }}>
-                          <h4 className={`font-display font-bold text-lg truncate ${activeProjectId === proj.id ? 'text-[var(--accent)]' : 'text-white'}`}>{proj.name}</h4>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* CODE MODAL */}
-          {showCodeModal && (
-            <div className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-md flex items-center justify-center p-2 md:p-4 msg-enter">
-              <div className="bg-[#121212] brutal-border w-full max-w-6xl h-[95vh] md:h-[85vh] shadow-[8px_8px_0px_#00ffcc] flex flex-col md:flex-row">
-                <div className="w-full md:w-80 h-[30%] md:h-full border-b md:border-b-0 md:border-r border-[#2a2a2a] flex flex-col bg-[#0a0a0a] shrink-0">
-                  <div className="p-4 border-b border-[#2a2a2a] flex justify-between items-center">
-                    <h2 className="font-display font-bold text-sm md:text-lg uppercase tracking-widest flex items-center gap-2"><History className="text-[#00ffcc]" size={18}/> Commits</h2>
-                    <button onClick={() => setShowCodeModal(false)} className="md:hidden text-[#888]"><X size={20} /></button>
-                  </div>
-                  <div className="flex-1 overflow-y-auto p-3 space-y-2">
-                    {activeProject?.codeVersions?.map((version, idx) => (
-                       <div key={version.id} onClick={() => { setSelectedVersionId(version.id); setActiveFileTab(0); }} className={`p-3 brutal-border cursor-pointer transition-all ${selectedVersionId === version.id ? 'border-[#00ffcc] bg-[#1a1a1a]' : 'border-[#2a2a2a]'}`}>
-                         <div className="flex items-center gap-2 mb-1">
-                           <GitCommit size={14} className={selectedVersionId === version.id ? "text-[#00ffcc]" : "text-[#666]"} />
-                           <span className="text-[10px] md:text-xs font-bold font-display uppercase text-white truncate">Build #{idx + 1}</span>
-                         </div>
-                       </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="flex-1 flex flex-col min-w-0 bg-[#070707] relative h-[70%] md:h-full">
-                  {selectedVersionId && (
-                    <div className="bg-[#121212] border-b border-[#2a2a2a]">
-                      <div className="flex overflow-x-auto p-2 gap-2">
-                        {activeProject.codeVersions.find(v => v.id === selectedVersionId)?.files?.map((file, i) => (
-                           <button key={i} onClick={() => setActiveFileTab(i)} className={`px-4 py-2 text-xs font-bold font-display uppercase tracking-wider brutal-border whitespace-nowrap ${activeFileTab === i ? 'bg-[#00ffcc] text-black border-[#00ffcc]' : 'bg-[#0a0a0a] text-[#888] hover:text-white'}`}>
-                             {file.filename}
-                           </button>
-                        ))}
-                      </div>
-                      <div className="p-3 border-t border-[#2a2a2a] flex justify-between">
-                        <button onClick={() => setCodeViewMode(m => m === 'code' ? 'preview' : 'code')} className="text-white text-xs brutal-border px-3 py-1 bg-[#333]">{codeViewMode === 'code' ? 'View Preview' : 'View Code'}</button>
-                        <button onClick={() => setShowCodeModal(false)} className="text-[#888] hover:text-white"><X size={20} /></button>
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="flex-1 overflow-y-auto p-4 bg-[#0a0a0a] relative">
-                    {!selectedVersionId ? <div className="text-center text-[#888] mt-10">Pilih build</div> : (() => {
-                        const currentVer = activeProject.codeVersions.find(v => v.id === selectedVersionId);
-                        const activeFile = currentVer.files[activeFileTab];
-                        if (!activeFile) return <div className="text-[#888]">File tidak ditemukan</div>;
-                        if (codeViewMode === 'code') return <CodeBlock code={activeFile.code} language={activeFile.language} />;
-                        
-                        const htmlFile = currentVer.files.find(f => f.language === 'html')?.code || '<div id="root">HTML not found.</div>';
-                        const cssFile = currentVer.files.find(f => f.language === 'css')?.code || '';
-                        const jsFile = currentVer.files.find(f => f.language === 'javascript' || f.language === 'js')?.code || '';
-                        const combinedCode = `<html><head><style>${cssFile}</style></head><body>${htmlFile}<script>${jsFile}<\/script></body></html>`;
-                        return <iframe srcDoc={activeFile.language === 'html' ? combinedCode : activeFile.code} title="Preview" className="w-full h-full bg-white rounded-sm border-0 absolute inset-0" />;
-                    })()}
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
+    <!-- HEADER -->
+    <div id="header">
+      <div class="header-left">
+        <button id="menuToggle" onclick="openSidebar()">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </button>
+        <div class="header-agent">
+          <span id="headerAgentIcon"></span>
+          <span id="headerAgentName"></span>
+          <span class="header-proj" id="headerProjName"></span>
         </div>
-      );
+      </div>
+      <div class="header-right">
+        <button class="hbtn" onclick="shareProject()">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+          Share
+        </button>
+        <button class="hbtn" onclick="openCodeModal()">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+          Code
+          <span class="dot-badge" id="codeBadge" style="display:none;"></span>
+        </button>
+      </div>
+    </div>
+
+    <!-- SEARCH BAR -->
+    <div id="searchbar">
+      <div class="search-wrap">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" id="searchInput" placeholder="Cari percakapan..." oninput="renderMessages()">
+      </div>
+      <button class="filter-btn" id="filterBtn" onclick="toggleFilter()">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+        <span id="filterLabel">All</span>
+      </button>
+    </div>
+
+    <!-- CHAT AREA -->
+    <div id="chatArea"></div>
+
+    <!-- CONTEXT WARNING -->
+    <div id="ctxWarning">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      <span id="ctxWarningText"></span>
+    </div>
+
+    <!-- FEATURE PANEL -->
+    <div id="featurePanel">
+      <div class="feature-header">
+        <span style="display:flex;align-items:center;gap:6px;color:var(--cyan);">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+          AI Auto-Build Pipeline
+        </span>
+        <button onclick="getRecommendation()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          Beri Rekomendasi
+        </button>
+      </div>
+      <div class="feature-input-row">
+        <input type="text" id="autoFeatureInput" placeholder="Ketik ide fitur baru untuk dieksekusi berantai secara otomatis...">
+        <button id="runPipelineBtn" onclick="startAutoPipeline()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          Run Pipeline
+        </button>
+      </div>
+    </div>
+
+    <!-- HANDOFF BAR -->
+    <div id="handoffBar">
+      <span class="handoff-label">
+        Tahap Selanjutnya:
+        <strong id="nextAgentName" style="color:#fff;"></strong>
+      </span>
+      <button class="handoff-btn" id="handoffBtn" onclick="handleForward()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+        Setuju & Teruskan
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+      </button>
+    </div>
+
+    <!-- INPUT AREA -->
+    <div id="inputArea">
+      <div id="slashMenu">
+        <div class="slash-head">Prompt Templates</div>
+        <div id="slashItems"></div>
+      </div>
+      <div class="input-form">
+        <div class="input-wrap">
+          <textarea id="chatInput" placeholder="Instruksi untuk agen... (Ketik '/' untuk template, Shift+Enter baris baru)" oninput="handleInputChange(this)" onkeydown="handleKeyDown(event)" rows="1"></textarea>
+          <button id="micBtn" onclick="toggleListening()" title="Voice Input">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/><path d="M19 10v2a7 7 0 01-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+          </button>
+        </div>
+        <div class="input-btns">
+          <button class="icon-btn" onclick="document.getElementById('fileInput').click()" title="Upload File">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0018 9h-1.26A8 8 0 103 16.3"/></svg>
+          </button>
+          <input type="file" id="fileInput" style="display:none" accept=".txt,.js,.jsx,.html,.css,.py,.json,.md" onchange="handleFileUpload(event)">
+          <button id="sendBtn" onclick="handleSend()" disabled>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODALS ===== -->
+
+<!-- API KEY MODAL -->
+<div class="modal-overlay" id="apiModal">
+  <div class="modal" style="max-width:420px;box-shadow:8px 8px 0 var(--accent);">
+    <div class="modal-head">
+      <h2 style="color:var(--accent);">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 11-7.778 7.778 5.5 5.5 0 017.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
+        Setup API Key
+      </h2>
+      <button class="modal-close" onclick="closeModal('apiModal')">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <p class="modal-desc">NEXUS-6 membutuhkan Google Gemini API Key. Key tersimpan lokal di browser Anda dan tidak pernah dikirim ke server manapun.</p>
+      <div class="form-field">
+        <label class="form-label">Gemini API Key</label>
+        <input type="password" id="apiKeyInput" class="form-input" placeholder="AIzaSy..." oninput="updateSendState()">
+      </div>
+      <button class="btn-primary" onclick="saveApiKey()">Simpan & Mulai</button>
+    </div>
+  </div>
+</div>
+
+<!-- PROJECT MODAL -->
+<div class="modal-overlay" id="projectModal">
+  <div class="modal" style="max-width:680px;box-shadow:8px 8px 0 var(--accent);">
+    <div class="modal-head">
+      <h2 style="color:var(--accent);">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+        Project Repository
+      </h2>
+      <button class="modal-close" onclick="closeModal('projectModal')">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="proj-form">
+        <input type="text" class="form-input" id="newProjName" placeholder="Nama Project Baru...">
+        <button onclick="createProject()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Buat
+        </button>
+      </div>
+      <div class="proj-list-head">
+        <span id="projCount">Daftar Proyek</span>
+        <button onclick="exportProject()">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Export JSON
+        </button>
+      </div>
+      <div id="projectList"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ANALYTICS MODAL -->
+<div class="modal-overlay" id="analyticsModal">
+  <div class="modal" style="max-width:480px;box-shadow:8px 8px 0 var(--cyan);">
+    <div class="modal-head">
+      <h2 style="color:var(--cyan);">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+        Project Analytics
+      </h2>
+      <button class="modal-close" onclick="closeModal('analyticsModal')">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="analytics-grid" id="analyticsGrid"></div>
+    </div>
+  </div>
+</div>
+
+<!-- AGENT MODAL -->
+<div class="modal-overlay" id="agentModal">
+  <div class="modal" style="max-width:520px;box-shadow:8px 8px 0 var(--magenta);">
+    <div class="modal-head">
+      <h2 style="color:var(--magenta);">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 010 14.14M4.93 4.93a10 10 0 000 14.14"/></svg>
+        Agent Configuration
+      </h2>
+      <button class="modal-close" onclick="closeModal('agentModal')">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <p class="modal-desc">Tambahkan agen kustom ke dalam pipeline. Tersimpan lokal di browser.</p>
+      <div class="form-field">
+        <label class="form-label">Nama Agen</label>
+        <input type="text" id="newAgentName" class="form-input" placeholder="Misal: Database Expert">
+      </div>
+      <div class="form-field">
+        <label class="form-label">Deskripsi</label>
+        <input type="text" id="newAgentDesc" class="form-input" placeholder="Spesialisasi agen ini...">
+      </div>
+      <div class="form-field">
+        <label class="form-label">System Prompt</label>
+        <textarea id="newAgentPrompt" class="form-input" rows="4" style="resize:vertical;" placeholder="Anda adalah agen yang..."></textarea>
+      </div>
+      <div class="agent-form-row">
+        <div class="form-field">
+          <label class="form-label">Warna Aksen</label>
+          <input type="color" id="newAgentColor" value="#ff00ff" class="form-input" style="height:40px;cursor:pointer;padding:2px;">
+        </div>
+        <div class="form-field">
+          <label class="form-label">AI Model</label>
+          <select id="newAgentModel" class="form-select" style="height:40px;">
+            <option value="flash">Gemini Flash (Cepat)</option>
+            <option value="pro">Gemini Pro (Akurat)</option>
+          </select>
+        </div>
+      </div>
+      <button class="btn-primary" style="background:var(--magenta);border-color:var(--magenta);box-shadow:4px 4px 0 var(--magenta);margin-top:8px;" onclick="addCustomAgent()">Simpan Agen Kustom</button>
+      <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border);">
+        <button class="btn-danger" onclick="resetAgents()">Reset Semua Agen ke Default</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- CODE MODAL -->
+<div class="modal-overlay" id="codeModal">
+  <div class="modal" style="max-width:1100px;height:88vh;flex-direction:row;box-shadow:8px 8px 0 var(--accent);">
+    <div class="code-sidebar">
+      <div class="code-sidebar-head">
+        <h2>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><circle cx="12" cy="12" r="4"/><line x1="1.05" y1="12" x2="7" y2="12"/><line x1="17.01" y1="12" x2="22.96" y2="12"/></svg>
+          Code History
+        </h2>
+        <button class="modal-close" onclick="closeModal('codeModal')">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="code-version-list" id="codeVersionList"></div>
+    </div>
+    <div class="code-main">
+      <div class="code-toolbar">
+        <div class="code-tabs">
+          <button class="code-tab active" id="tabCode" onclick="setCodeTab('code')">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:4px;"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+            Code
+          </button>
+          <button class="code-tab" id="tabDiff" onclick="setCodeTab('diff')">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:4px;"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+            Diff
+          </button>
+          <button class="code-tab" id="tabPreview" onclick="setCodeTab('preview')" style="color:var(--cyan);">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:4px;"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            Preview
+          </button>
+        </div>
+        <div class="code-actions" id="codeActions" style="display:none;">
+          <button class="code-action-btn" onclick="downloadSelectedCode()">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Export
+          </button>
+          <button class="code-action-btn" id="copyCodeBtn" onclick="copySelectedCode()">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+            Salin
+          </button>
+        </div>
+      </div>
+      <div class="code-content" id="codeContent">
+        <div class="code-empty">Pilih versi di panel kiri</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PIPELINE COMPLETE POPUP -->
+<div id="pipelinePopup">
+  <div class="pipeline-box">
+    <div class="pipeline-icon">
+      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+    </div>
+    <div class="pipeline-title">Pipeline Selesai!</div>
+    <div class="pipeline-desc">Semua agen dalam rangkaian sukses menganalisis dan mengimplementasikan fitur baru secara berurutan. Kode terbaru telah terintegrasi.</div>
+    <div class="pipeline-btns">
+      <button class="btn-close" onclick="document.getElementById('pipelinePopup').classList.remove('show')">Tutup</button>
+      <button class="btn-view" onclick="openCodeModalFromPipeline()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+        Lihat Diff Code
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===== DATA & STATE =====
+const DEFAULT_AGENTS = [
+  { id:'planner', name:'Architect / Planner', color:'#ccff00', model:'pro', desc:'Merencanakan arsitektur.', prompt:'Anda adalah Agen Perencana. JANGAN langsung menulis kode panjang. Tanyakan konteks, buat rencana bertahap yang jelas, tunggu persetujuan.' },
+  { id:'frontend', name:'Frontend Aesthetic', color:'#ff00ff', model:'flash', desc:'Desain UI ekstrem.', prompt:'Anda adalah Agen Desain Frontend. Buat kode HTML/CSS/JS dengan estetika BERANI: Brutalism, Retro-Futuristik, atau Elegan Gelap. Tipografi khas, warna dominan tajam, animasi bermakna.' },
+  { id:'feature', name:'Feature Expander', color:'#00ffcc', model:'pro', desc:'Rekomendasi & fitur baru.', prompt:'Anda adalah Agen Penambah Fitur. Berikan 3-5 ide fitur inovatif, lalu implementasikan jika disetujui. Pastikan terintegrasi mulus.' },
+  { id:'bugtracker', name:'Bug & Complain', color:'#ff3333', model:'flash', desc:'Analisis error & perbaikan.', prompt:'Anda adalah Agen Bug Tracker. Analisis error dengan cermat, temukan akar masalah, berikan penjelasan singkat lalu kode perbaikannya.' },
+  { id:'reviewer', name:'Code Reviewer', color:'#00ffff', model:'pro', desc:'Standar kualitas kode.', prompt:'Anda adalah Agen Code Review. Periksa kode dengan standar tinggi, tulis komentar detail, diskusikan struktur, bertindak seperti proses Pull Request.' },
+  { id:'security', name:'SecOps Scanner', color:'#ff9900', model:'pro', desc:'Pemindaian kerentanan.', prompt:'Anda adalah Agen Keamanan DevSecOps. Pindai kode untuk kerentanan (XSS, SQLi, dll), beri tingkat keparahan (Low/Medium/High/Critical), dan kode perbaikan.' },
+  { id:'memory', name:'Spreadsheet', color:'#ffcc00', model:'flash', desc:'Ringkasan & status proyek.', prompt:'Anda adalah Agen Memori. Ringkas status proyek, catat keputusan penting, dan berikan referensi ke keputusan sebelumnya.' }
+];
+
+const TEMPLATES = [
+  { trigger:'/ui', title:'Buat Komponen UI', text:'Tolong buatkan komponen UI untuk [NAMA FITUR] dengan gaya brutalist.' },
+  { trigger:'/refactor', title:'Refactor Kode', text:'Tolong refactor kode terakhir agar lebih bersih, efisien, dan modular.' },
+  { trigger:'/fix', title:'Cari & Fix Bug', text:'Saya mendapatkan error: [PASTE ERROR]. Tolong analisis dan berikan solusinya.' },
+  { trigger:'/review', title:'Review Kode', text:'Tolong review kode berikut dan berikan feedback detail:\n```\n[PASTE KODE]\n```' },
+  { trigger:'/plan', title:'Buat Rencana', text:'Tolong buat rencana arsitektur untuk fitur: [DESKRIPSI FITUR]' }
+];
+
+let STATE = {
+  apiKey: localStorage.getItem('nx_apikey') || '',
+  activeAgentId: 'planner',
+  activeProjectId: null,
+  projects: [],
+  agents: [],
+  isTyping: false,
+  isAutoRunning: false,
+  filterMode: 'all',
+  codeTab: 'code',
+  selectedVersionId: null,
+  editingProjectId: null,
+  abortPipeline: false,
+  isListening: false
+};
+
+const generateId = () => Date.now().toString(36) + Math.random().toString(36).slice(2,8);
+
+// ===== INDEXED DB =====
+let db = null;
+async function initDB() {
+  if (db) return db;
+  return new Promise((res, rej) => {
+    const req = indexedDB.open('Nexus6DB_v7', 2);
+    req.onupgradeneeded = e => {
+      const d = e.target.result;
+      if (!d.objectStoreNames.contains('projects')) d.createObjectStore('projects', { keyPath:'id' });
+      if (!d.objectStoreNames.contains('agents')) d.createObjectStore('agents', { keyPath:'id' });
+    };
+    req.onsuccess = () => { db = req.result; res(db); };
+    req.onerror = () => rej(req.error);
+  });
+}
+async function dbGet(store) {
+  const d = await initDB();
+  return new Promise(res => {
+    const tx = d.transaction(store,'readonly');
+    const r = tx.objectStore(store).getAll();
+    r.onsuccess = () => res(r.result);
+    r.onerror = () => res([]);
+  });
+}
+async function dbPut(store, items) {
+  const d = await initDB();
+  return new Promise(res => {
+    const tx = d.transaction(store,'readwrite');
+    items.forEach(item => tx.objectStore(store).put(item));
+    tx.oncomplete = () => res(true);
+    tx.onerror = () => res(false);
+  });
+}
+
+// ===== INIT APP =====
+async function initApp() {
+  // Check shared link
+  if (window.location.hash.length > 10) {
+    try {
+      const proj = JSON.parse(atob(decodeURIComponent(window.location.hash.slice(1))));
+      STATE.projects = [proj];
+      STATE.activeProjectId = proj.id;
+      STATE.agents = DEFAULT_AGENTS;
+      doLogin();
+      return;
+    } catch(e) { console.warn('Invalid share link'); }
+  }
+
+  // Load agents
+  const savedAgents = await dbGet('agents');
+  STATE.agents = savedAgents.length > 0 ? savedAgents : JSON.parse(JSON.stringify(DEFAULT_AGENTS));
+
+  // Load projects
+  let savedProjects = await dbGet('projects');
+  if (savedProjects.length === 0) {
+    const initProj = createEmptyProject('Project Alpha');
+    savedProjects = [initProj];
+    await dbPut('projects', savedProjects);
+  }
+  STATE.projects = savedProjects;
+  STATE.activeProjectId = localStorage.getItem('nx_active_proj') || savedProjects[0].id;
+  if (!STATE.projects.find(p => p.id === STATE.activeProjectId)) {
+    STATE.activeProjectId = STATE.projects[0].id;
+  }
+}
+
+function createEmptyProject(name) {
+  const proj = {
+    id: 'proj-' + generateId(), name, updatedAt: Date.now(),
+    messages: {}, codeVersions: [],
+    analytics: { runs:0, tokens:0, timeSpent:0 }
+  };
+  DEFAULT_AGENTS.forEach(a => {
+    proj.messages[a.id] = [{ id:generateId(), role:'system', text:`**${a.name}** online. Sistem siap.\nBagaimana saya bisa membantu hari ini?`, timestamp: new Date().toLocaleTimeString() }];
+  });
+  return proj;
+}
+
+function getProject() {
+  return STATE.projects.find(p => p.id === STATE.activeProjectId);
+}
+function getAgent() {
+  return STATE.agents.find(a => a.id === STATE.activeAgentId) || STATE.agents[0];
+}
+
+async function saveProjects() {
+  await dbPut('projects', STATE.projects);
+  localStorage.setItem('nx_active_proj', STATE.activeProjectId);
+}
+async function saveAgents() {
+  await dbPut('agents', STATE.agents);
+}
+
+// ===== LOGIN =====
+function doLogin() {
+  document.getElementById('loginScreen').classList.remove('show');
+  document.getElementById('app').style.display = 'flex';
+  updateApiKeyStatus();
+  renderAgents();
+  renderAll();
+  if (!STATE.apiKey) {
+    setTimeout(() => openModal('apiModal'), 600);
+  }
+}
+
+// ===== TOAST =====
+let toastTimer = null;
+function showToast(msg, type='error') {
+  const el = document.getElementById('toast');
+  document.getElementById('toastMsg').textContent = msg;
+  el.className = 'show ' + type;
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.className = '', 4000);
+}
+
+// ===== RENDER ALL =====
+function renderAll() {
+  renderHeader();
+  renderMessages();
+  updateBars();
+  renderContextWarning();
+  updateApiKeyStatus();
+  updateSendState();
+}
+
+function renderHeader() {
+  const agent = getAgent();
+  const proj = getProject();
+  document.getElementById('headerAgentIcon').innerHTML = getSvgIcon(agent.id, 16, agent.color);
+  document.getElementById('headerAgentName').textContent = agent.name;
+  document.getElementById('headerProjName').textContent = proj ? proj.name : '';
+  const hasCode = proj && proj.codeVersions && proj.codeVersions.length > 0;
+  document.getElementById('codeBadge').style.display = hasCode ? 'block' : 'none';
+}
+
+// ===== AGENT RENDERING =====
+function renderAgents() {
+  const container = document.getElementById('agentButtons');
+  container.innerHTML = STATE.agents.map(a => `
+    <button class="agent-btn ${a.id === STATE.activeAgentId ? 'active' : ''}" onclick="switchAgent('${a.id}')">
+      <span style="color:${STATE.activeAgentId===a.id?'#000':a.color};flex-shrink:0;">${getSvgIcon(a.id, 15, 'currentColor')}</span>
+      <span class="agent-name">${a.name}</span>
+      ${a.model==='pro'?'<span class="agent-model">PRO</span>':''}
+    </button>
+  `).join('');
+}
+
+function switchAgent(id) {
+  STATE.activeAgentId = id;
+  renderAgents();
+  renderMessages();
+  renderHeader();
+  updateBars();
+  closeSidebar();
+}
+
+// ===== MESSAGES =====
+function renderMessages() {
+  const proj = getProject();
+  const agent = getAgent();
+  const searchQ = document.getElementById('searchInput').value.toLowerCase();
+  let msgs = (proj?.messages[STATE.activeAgentId] || []);
+
+  if (STATE.filterMode === 'code') msgs = msgs.filter(m => m.text.includes('```'));
+  else if (searchQ) msgs = msgs.filter(m => m.text.toLowerCase().includes(searchQ));
+
+  const container = document.getElementById('chatArea');
+  container.innerHTML = msgs.map(msg => renderMessage(msg, agent)).join('');
+
+  // Syntax highlighting
+  container.querySelectorAll('pre code').forEach(el => {
+    if (window.hljs) { delete el.dataset.highlighted; hljs.highlightElement(el); }
+  });
+
+  container.scrollTop = container.scrollHeight;
+}
+
+function renderMessage(msg, agent) {
+  const isUser = msg.role === 'user';
+  const color = isUser ? '#888' : agent.color;
+  const label = isUser ? 'Anda' : agent.name;
+  const content = isUser ? escHtml(msg.text) : formatMsgContent(msg.text);
+
+  return `
+    <div class="msg-wrap ${isUser?'user':'agent'} msg-enter">
+      <div class="msg-bubble ${isUser?'user':'agent'}" style="${!isUser?'border-left-color:'+agent.color:''}" id="msg-${msg.id}">
+        <div class="msg-meta">
+          <span class="msg-sender" style="color:${color}">${escHtml(label)}</span>
+          <div class="msg-actions">
+            ${isUser ? `<button class="msg-action-btn" onclick="editMessage('${msg.id}')">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+              Edit
+            </button>` : `<button class="msg-action-btn" onclick="copyMsgText('${msg.id}')">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+              Salin
+            </button>`}
+            <span class="msg-time">${msg.timestamp||''}</span>
+          </div>
+        </div>
+        <div class="msg-content">${content}</div>
+      </div>
+    </div>
+  `;
+}
+
+function formatMsgContent(text) {
+  const parts = text.split(/(```[\s\S]*?```)/g);
+  return parts.map(part => {
+    if (part.startsWith('```') && part.endsWith('```')) {
+      const inner = part.slice(3,-3).trim();
+      const lines = inner.split('\n');
+      const lang = lines[0].match(/^[a-zA-Z0-9]+$/) ? lines.shift() : 'javascript';
+      const code = escHtml(lines.join('\n'));
+      return `<pre><code class="language-${lang}">${code}</code></pre>`;
     }
+    let safe = escHtml(part);
+    safe = safe.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+    safe = safe.replace(/`([^`]+)`/g, '<code>$1</code>');
+    safe = safe.replace(/\n/g, '<br>');
+    return `<span>${safe}</span>`;
+  }).join('');
+}
 
-    const root = createRoot(document.getElementById('root'));
-    root.render(<App />);
-  </script>
+function escHtml(str) {
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function addTypingIndicator() {
+  const agent = getAgent();
+  const el = document.createElement('div');
+  el.id = 'typingIndicator';
+  el.className = 'typing-indicator msg-enter';
+  el.style.borderLeftColor = agent.color;
+  el.innerHTML = `
+    <svg class="spin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="${agent.color}" stroke-width="2"><path d="M21 12a9 9 0 11-6.219-8.56"/></svg>
+    <span>Memproses...</span>
+  `;
+  document.getElementById('chatArea').appendChild(el);
+  el.scrollIntoView({ behavior:'smooth' });
+}
+
+function removeTypingIndicator() {
+  document.getElementById('typingIndicator')?.remove();
+}
+
+// ===== API CALL =====
+async function callAPI(prompt, agentPrompt) {
+  const key = STATE.apiKey;
+  if (!key) throw new Error('API Key kosong. Setup di sidebar.');
+  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${key}`;
+  const payload = {
+    contents: [{ parts: [{ text: `${agentPrompt}\n\n${prompt}` }] }]
+  };
+  for (let i = 0; i < 3; i++) {
+    if (STATE.abortPipeline) throw new Error('Aborted');
+    try {
+      const res = await fetch(endpoint, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });
+      const data = await res.json();
+      if (!res.ok) {
+        if (res.status === 429 && i < 2) { await sleep([1500,3000][i]); continue; }
+        throw new Error(data.error?.message || `API Error ${res.status}`);
+      }
+      return data.candidates?.[0]?.content?.parts?.[0]?.text || 'Respons kosong.';
+    } catch(err) {
+      if (err.message === 'Aborted' || i === 2) throw err;
+      await sleep(1500);
+    }
+  }
+}
+
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+function extractCodeBlocks(text) {
+  const re = /```(?:[a-zA-Z0-9]+)?\n([\s\S]*?)```/g;
+  const out = []; let m;
+  while ((m = re.exec(text)) !== null) out.push(m[1].trim());
+  return out;
+}
+
+// ===== SEND MESSAGE =====
+let overrideHistory = null;
+
+async function handleSend() {
+  const input = document.getElementById('chatInput');
+  const text = input.value.trim();
+  if (!text || STATE.isTyping || STATE.isAutoRunning) return;
+
+  const agent = getAgent();
+  const proj = getProject();
+
+  const userMsg = { id:generateId(), role:'user', text, timestamp:new Date().toLocaleTimeString() };
+  const history = overrideHistory || (proj.messages[STATE.activeAgentId] || []);
+
+  // Add user message
+  STATE.projects = STATE.projects.map(p => {
+    if (p.id !== STATE.activeProjectId) return p;
+    return { ...p, messages: { ...p.messages, [STATE.activeAgentId]: [...history, userMsg] }, updatedAt: Date.now() };
+  });
+
+  overrideHistory = null;
+  input.value = '';
+  input.style.height = '52px';
+  document.getElementById('slashMenu').classList.remove('show');
+  updateSendState();
+  renderMessages();
+
+  STATE.isTyping = true;
+  showLock(false);
+  addTypingIndicator();
+  const t0 = Date.now();
+
+  try {
+    const currentHistory = [...history, userMsg];
+    const ctx = currentHistory.map(m => `${m.role==='user'?'User':'Agent'}: ${m.text}`).join('\n\n');
+    const responseText = await callAPI(`Konteks:\n${ctx}`, agent.prompt || '');
+
+    const aiMsg = { id:generateId(), role:'system', text:responseText, timestamp:new Date().toLocaleTimeString() };
+    const codeVersions = extractCodeBlocks(responseText).map((c,i) => ({
+      id: 'v-'+generateId()+'-'+i, timestamp:Date.now(), agentId:STATE.activeAgentId, code:c
+    }));
+
+    const elapsed = Date.now() - t0;
+    const tokens = Math.floor((ctx.length + responseText.length) / 4);
+
+    STATE.projects = STATE.projects.map(p => {
+      if (p.id !== STATE.activeProjectId) return p;
+      return {
+        ...p,
+        messages: { ...p.messages, [STATE.activeAgentId]: [...currentHistory, aiMsg] },
+        codeVersions: [...(p.codeVersions||[]), ...codeVersions],
+        analytics: { ...(p.analytics||{}), tokens:(p.analytics?.tokens||0)+tokens, timeSpent:(p.analytics?.timeSpent||0)+elapsed },
+        updatedAt: Date.now()
+      };
+    });
+    await saveProjects();
+  } catch(err) {
+    showToast(err.message, 'error');
+  } finally {
+    STATE.isTyping = false;
+    hideLock();
+    removeTypingIndicator();
+    renderMessages();
+    renderHeader();
+    updateBars();
+    renderContextWarning();
+  }
+}
+
+// ===== EDIT & RESEND =====
+let editMsgId = null;
+function editMessage(msgId) {
+  const proj = getProject();
+  const msgs = proj.messages[STATE.activeAgentId] || [];
+  const idx = msgs.findIndex(m => m.id === msgId);
+  if (idx === -1) return;
+  const msg = msgs[idx];
+  const input = document.getElementById('chatInput');
+  input.value = msg.text;
+  input.style.height = '52px';
+  input.style.height = Math.min(input.scrollHeight, 180) + 'px';
+  input.focus();
+  overrideHistory = msgs.slice(0, idx);
+  editMsgId = msgId;
+  updateSendState();
+  showToast('Pesan disiapkan untuk diedit. Ubah lalu tekan Enter.', 'warning');
+}
+
+function copyMsgText(msgId) {
+  const proj = getProject();
+  const msgs = proj.messages[STATE.activeAgentId] || [];
+  const msg = msgs.find(m => m.id === msgId);
+  if (!msg) return;
+  navigator.clipboard.writeText(msg.text).then(() => showToast('Tersalin!','success')).catch(() => {
+    const ta = document.createElement('textarea');
+    ta.value = msg.text; document.body.appendChild(ta); ta.select();
+    document.execCommand('copy'); document.body.removeChild(ta);
+    showToast('Tersalin!','success');
+  });
+}
+
+// ===== INPUT HANDLER =====
+function handleInputChange(el) {
+  el.style.height = '52px';
+  el.style.height = Math.min(el.scrollHeight, 180) + 'px';
+  updateSendState();
+
+  const val = el.value;
+  const slash = document.getElementById('slashMenu');
+  if (val === '/' || (val.startsWith('/') && val.length < 15)) {
+    renderSlashMenu(val.slice(1));
+    slash.classList.add('show');
+  } else {
+    slash.classList.remove('show');
+  }
+}
+
+function renderSlashMenu(query='') {
+  const items = TEMPLATES.filter(t => !query || t.trigger.includes(query) || t.title.toLowerCase().includes(query));
+  document.getElementById('slashItems').innerHTML = items.map(t => `
+    <div class="slash-item" onclick="applyTemplate('${escHtml(t.text)}')">
+      <span class="slash-trigger">${t.trigger}</span>
+      <span class="slash-title">${t.title}</span>
+      <div class="slash-preview">${t.text.slice(0,60)}...</div>
+    </div>
+  `).join('') || '<div style="padding:10px 12px;font-size:11px;color:#666;">Tidak ada template cocok</div>';
+}
+
+function applyTemplate(text) {
+  document.getElementById('chatInput').value = text;
+  handleInputChange(document.getElementById('chatInput'));
+  document.getElementById('slashMenu').classList.remove('show');
+  document.getElementById('chatInput').focus();
+}
+
+function handleKeyDown(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }
+  if (e.key === 'Escape') document.getElementById('slashMenu').classList.remove('show');
+}
+
+function updateSendState() {
+  const val = document.getElementById('chatInput').value.trim();
+  document.getElementById('sendBtn').disabled = !val || STATE.isTyping || STATE.isAutoRunning;
+}
+
+// ===== FILE UPLOAD =====
+function handleFileUpload(e) {
+  const file = e.target.files[0]; if (!file) return;
+  if (file.size > 500000) return showToast('File terlalu besar (Maks 500KB)','error');
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const input = document.getElementById('chatInput');
+    input.value += `\n[FILE: ${file.name}]\n\`\`\`\n${ev.target.result}\n\`\`\`\n`;
+    handleInputChange(input);
+    showToast(`File ${file.name} disisipkan`,'success');
+  };
+  reader.readAsText(file);
+  e.target.value = null;
+}
+
+// ===== VOICE =====
+function toggleListening() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) return showToast('Browser tidak mendukung Web Speech API','error');
+  if (STATE.isListening) return;
+  const rec = new SR();
+  rec.lang = 'id-ID';
+  rec.onstart = () => { STATE.isListening = true; document.getElementById('micBtn').classList.add('listening'); };
+  rec.onresult = e => {
+    const t = e.results[0][0].transcript;
+    const inp = document.getElementById('chatInput');
+    inp.value += (inp.value.length > 0 ? ' ' : '') + t;
+    handleInputChange(inp);
+  };
+  rec.onerror = () => { STATE.isListening = false; document.getElementById('micBtn').classList.remove('listening'); showToast('Gagal mendengarkan','error'); };
+  rec.onend = () => { STATE.isListening = false; document.getElementById('micBtn').classList.remove('listening'); };
+  rec.start();
+}
+
+// ===== LOCK / UNLOCK =====
+function showLock(isPipeline, statusText='Memproses Request...') {
+  document.getElementById('lockStatus').textContent = statusText;
+  document.getElementById('lockAbort').style.display = isPipeline ? 'block' : 'none';
+  document.getElementById('lockModel').textContent = getAgent().model === 'pro' ? 'Gemini Pro Aktif' : 'Gemini Flash Aktif';
+  document.getElementById('lockScreen').classList.add('show');
+  document.getElementById('app').classList.add('scanlines');
+}
+function hideLock() {
+  document.getElementById('lockScreen').classList.remove('show');
+  document.getElementById('app').classList.remove('scanlines');
+}
+function updateLockStatus(text) {
+  document.getElementById('lockStatus').textContent = text;
+}
+
+// ===== AUTO PIPELINE =====
+async function startAutoPipeline() {
+  const featureInput = document.getElementById('autoFeatureInput');
+  const featureRequest = featureInput.value.trim();
+  if (!featureRequest || STATE.isAutoRunning) return;
+
+  STATE.isAutoRunning = true;
+  STATE.abortPipeline = false;
+  featureInput.value = '';
+  document.getElementById('runPipelineBtn').disabled = true;
+
+  const autoChain = ['planner','frontend','reviewer','security'];
+  let lastOutput = featureRequest;
+  let isFirst = true;
+  let totalTokens = 0;
+  const t0 = Date.now();
+
+  // Init message
+  const initMsg = { id:generateId(), role:'user', text:`[AUTO-PIPELINE REQUEST]: ${featureRequest}`, timestamp:new Date().toLocaleTimeString() };
+  STATE.projects = STATE.projects.map(p => {
+    if (p.id !== STATE.activeProjectId) return p;
+    return { ...p, messages: { ...p.messages, feature: [...(p.messages.feature||[]), initMsg] } };
+  });
+
+  for (const agentId of autoChain) {
+    if (STATE.abortPipeline) break;
+    const targetAgent = STATE.agents.find(a => a.id === agentId);
+    if (!targetAgent) continue;
+
+    STATE.activeAgentId = agentId;
+    renderAgents();
+    renderHeader();
+    showLock(true, `Menghubungi ${targetAgent.name}...`);
+    await sleep(800);
+    if (STATE.abortPipeline) break;
+
+    const prompt = isFirst
+      ? `[PIPELINE OTOMATIS]: Spesifikasi:\n"${lastOutput}"\n\nBuat Rencana Arsitektur.`
+      : `[PIPELINE OTOMATIS]: Hasil agen sebelumnya:\n"""\n${lastOutput}\n"""\n\nSebagai ${targetAgent.name}, lanjutkan pengembangan.`;
+    isFirst = false;
+
+    const userMsg = { id:generateId(), role:'user', text:prompt, timestamp:new Date().toLocaleTimeString() };
+    STATE.projects = STATE.projects.map(p => {
+      if (p.id !== STATE.activeProjectId) return p;
+      return { ...p, messages: { ...p.messages, [agentId]: [...(p.messages[agentId]||[]), userMsg] } };
+    });
+    renderMessages();
+
+    updateLockStatus(`${targetAgent.name} sedang bekerja...`);
+    try {
+      const responseText = await callAPI(prompt, targetAgent.prompt || '');
+      if (STATE.abortPipeline) throw new Error('Aborted');
+
+      const aiMsg = { id:generateId(), role:'system', text:responseText, timestamp:new Date().toLocaleTimeString() };
+      const codeVersions = extractCodeBlocks(responseText).map((c,i) => ({
+        id:'v-'+generateId()+'-'+i, timestamp:Date.now(), agentId, code:c
+      }));
+      totalTokens += Math.floor((prompt.length + responseText.length) / 4);
+
+      STATE.projects = STATE.projects.map(p => {
+        if (p.id !== STATE.activeProjectId) return p;
+        return {
+          ...p,
+          messages: { ...p.messages, [agentId]: [...(p.messages[agentId]||[]), aiMsg] },
+          codeVersions: [...(p.codeVersions||[]), ...codeVersions],
+          updatedAt: Date.now()
+        };
+      });
+      lastOutput = responseText;
+      renderMessages();
+    } catch(err) {
+      if (err.message !== 'Aborted') showToast(err.message,'error');
+      break;
+    }
+    await sleep(800);
+  }
+
+  STATE.isAutoRunning = false;
+  document.getElementById('runPipelineBtn').disabled = false;
+  hideLock();
+  renderMessages();
+  updateBars();
+
+  if (!STATE.abortPipeline) {
+    STATE.projects = STATE.projects.map(p => {
+      if (p.id !== STATE.activeProjectId) return p;
+      return {
+        ...p,
+        analytics: { ...(p.analytics||{}), runs:(p.analytics?.runs||0)+1, tokens:(p.analytics?.tokens||0)+totalTokens, timeSpent:(p.analytics?.timeSpent||0)+(Date.now()-t0) }
+      };
+    });
+    await saveProjects();
+    document.getElementById('pipelinePopup').classList.add('show');
+  }
+}
+
+function abortPipeline() {
+  STATE.abortPipeline = true;
+  showToast('Membatalkan pipeline...','warning');
+}
+
+// ===== HANDOFF =====
+function handleForward() {
+  const agents = STATE.agents;
+  const curIdx = agents.findIndex(a => a.id === STATE.activeAgentId);
+  const next = agents[curIdx + 1];
+  if (!next) return;
+  const proj = getProject();
+  const msgs = proj.messages[STATE.activeAgentId] || [];
+  const lastAi = [...msgs].reverse().find(m => m.role === 'system');
+  if (!lastAi) return;
+  const cur = getAgent();
+  const text = `[HANDOFF OTOMATIS dari ${cur.name}]:\n"""\n${lastAi.text}\n"""\n\nLanjutkan sesuai spesialisasi Anda (${next.name}).`;
+  STATE.activeAgentId = next.id;
+  renderAgents();
+  renderHeader();
+
+  const input = document.getElementById('chatInput');
+  input.value = text;
+  handleInputChange(input);
+  handleSend();
+}
+
+function getRecommendation() {
+  const input = document.getElementById('chatInput');
+  input.value = 'Tolong berikan 3 rekomendasi fitur canggih selanjutnya untuk proyek ini. Jelaskan ide fiturnya, jangan tulis kode dulu.';
+  handleInputChange(input);
+  handleSend();
+}
+
+// ===== BARS RENDERING =====
+function updateBars() {
+  const agents = STATE.agents;
+  const curIdx = agents.findIndex(a => a.id === STATE.activeAgentId);
+  const next = agents[curIdx + 1];
+  const proj = getProject();
+  const msgs = proj?.messages[STATE.activeAgentId] || [];
+  const hasAiReply = msgs.filter(m => m.role==='system').length > 1;
+
+  // Feature panel
+  const fp = document.getElementById('featurePanel');
+  fp.className = STATE.activeAgentId === 'feature' ? 'show' : '';
+
+  // Handoff bar
+  const hb = document.getElementById('handoffBar');
+  hb.className = (next && STATE.activeAgentId !== 'feature') ? 'show' : '';
+  if (next) {
+    document.getElementById('nextAgentName').textContent = next.name;
+    document.getElementById('nextAgentName').style.color = next.color;
+    document.getElementById('handoffBtn').disabled = !hasAiReply;
+  }
+}
+
+// ===== CONTEXT WARNING =====
+function renderContextWarning() {
+  const proj = getProject();
+  const msgs = proj?.messages[STATE.activeAgentId] || [];
+  const tokens = Math.floor(JSON.stringify(msgs).length / 4);
+  const el = document.getElementById('ctxWarning');
+  if (tokens > 15000) {
+    el.classList.add('show');
+    document.getElementById('ctxWarningText').textContent = `Peringatan: Konteks percakapan sangat panjang (~${tokens.toLocaleString()} tokens). Model mungkin melambat.`;
+  } else {
+    el.classList.remove('show');
+  }
+}
+
+// ===== FILTER =====
+function toggleFilter() {
+  STATE.filterMode = STATE.filterMode === 'all' ? 'code' : 'all';
+  const btn = document.getElementById('filterBtn');
+  document.getElementById('filterLabel').textContent = STATE.filterMode === 'code' ? 'Code Only' : 'All';
+  btn.className = 'filter-btn' + (STATE.filterMode === 'code' ? ' active' : '');
+  renderMessages();
+}
+
+// ===== PROJECT MANAGEMENT =====
+function openProjectModal() {
+  renderProjectList();
+  openModal('projectModal');
+}
+
+function renderProjectList() {
+  document.getElementById('projCount').textContent = `Daftar Proyek (${STATE.projects.length})`;
+  document.getElementById('projectList').innerHTML = STATE.projects.map(proj => `
+    <div class="proj-item ${proj.id === STATE.activeProjectId ? 'active-proj' : ''}" id="proj-item-${proj.id}">
+      <div class="proj-item-info" onclick="selectProject('${proj.id}')">
+        ${STATE.editingProjectId === proj.id ? `
+          <div class="proj-rename-form">
+            <input type="text" id="renameInput-${proj.id}" value="${escHtml(proj.name)}" onkeydown="if(event.key==='Enter')submitRename('${proj.id}')">
+            <button onclick="submitRename('${proj.id}')">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+            </button>
+          </div>
+        ` : `<div class="proj-item-name">${escHtml(proj.name)}</div>`}
+        <div class="proj-item-time">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          ${formatTime(proj.updatedAt)}
+        </div>
+      </div>
+      <div class="proj-item-actions">
+        ${proj.id === STATE.activeProjectId ? '<span class="proj-badge">Aktif</span>' : ''}
+        <button class="proj-icon-btn edit" onclick="startRename('${proj.id}',event)">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        </button>
+        <button class="proj-icon-btn del" onclick="deleteProject('${proj.id}',event)">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+        </button>
+      </div>
+    </div>
+  `).join('');
+
+  if (STATE.editingProjectId) {
+    const inp = document.getElementById(`renameInput-${STATE.editingProjectId}`);
+    if (inp) { inp.focus(); inp.select(); }
+  }
+}
+
+function createProject() {
+  const name = document.getElementById('newProjName').value.trim();
+  if (!name) return showToast('Nama proyek tidak boleh kosong','error');
+  const proj = createEmptyProject(name);
+  STATE.projects.unshift(proj);
+  STATE.activeProjectId = proj.id;
+  document.getElementById('newProjName').value = '';
+  saveProjects();
+  renderProjectList();
+  renderAll();
+  showToast(`Proyek "${name}" dibuat!`,'success');
+}
+
+function selectProject(id) {
+  if (STATE.editingProjectId) return;
+  STATE.activeProjectId = id;
+  saveProjects();
+  renderAll();
+  closeModal('projectModal');
+}
+
+function deleteProject(id, e) {
+  e.stopPropagation();
+  if (STATE.projects.length === 1) return showToast('Tidak bisa menghapus satu-satunya proyek','error');
+  STATE.projects = STATE.projects.filter(p => p.id !== id);
+  if (STATE.activeProjectId === id) STATE.activeProjectId = STATE.projects[0].id;
+  saveProjects();
+  renderProjectList();
+  renderAll();
+  showToast('Proyek dihapus','success');
+}
+
+function startRename(id, e) {
+  e.stopPropagation();
+  STATE.editingProjectId = id;
+  renderProjectList();
+}
+
+function submitRename(id) {
+  const inp = document.getElementById(`renameInput-${id}`);
+  const name = inp?.value.trim();
+  if (!name) return;
+  STATE.projects = STATE.projects.map(p => p.id === id ? { ...p, name, updatedAt:Date.now() } : p);
+  STATE.editingProjectId = null;
+  saveProjects();
+  renderProjectList();
+  renderHeader();
+}
+
+function exportProject() {
+  const proj = getProject();
+  const blob = new Blob([JSON.stringify(proj, null, 2)], { type:'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `${proj.name.replace(/\s/g,'-')}-backup.json`;
+  a.click();
+  showToast('Project diekspor!','success');
+}
+
+// ===== SHARE =====
+function shareProject() {
+  const proj = getProject();
+  const encoded = encodeURIComponent(btoa(JSON.stringify(proj)));
+  const url = `${location.origin}${location.pathname}#${encoded}`;
+  navigator.clipboard.writeText(url).then(() => showToast('Link read-only berhasil disalin!','success')).catch(() => {
+    prompt('Salin link berikut:', url);
+  });
+}
+
+// ===== ANALYTICS =====
+function openAnalyticsModal() {
+  const proj = getProject();
+  const a = proj?.analytics || {};
+  document.getElementById('analyticsGrid').innerHTML = `
+    <div class="analytics-card">
+      <div class="analytics-label">Total Token Used</div>
+      <div class="analytics-value" style="color:var(--cyan);">${(a.tokens||0).toLocaleString()}</div>
+    </div>
+    <div class="analytics-card">
+      <div class="analytics-label">Pipeline Runs</div>
+      <div class="analytics-value" style="color:#fff;">${a.runs||0}</div>
+    </div>
+    <div class="analytics-card">
+      <div class="analytics-label">Code Versions</div>
+      <div class="analytics-value" style="color:var(--accent);">${proj?.codeVersions?.length||0}</div>
+    </div>
+    <div class="analytics-card">
+      <div class="analytics-label">Est. Time Saved</div>
+      <div class="analytics-value" style="color:var(--magenta);">${Math.round((a.timeSpent||0)/60000*5)} min</div>
+    </div>
+    <div class="analytics-card">
+      <div class="analytics-label">Total Pesan</div>
+      <div class="analytics-value" style="color:var(--orange);">${Object.values(proj?.messages||{}).flat().length}</div>
+    </div>
+    <div class="analytics-card">
+      <div class="analytics-label">Agen Dipakai</div>
+      <div class="analytics-value" style="color:var(--yellow);">${Object.keys(proj?.messages||{}).filter(k=>(proj.messages[k]||[]).length>1).length}</div>
+    </div>
+  `;
+  openModal('analyticsModal');
+}
+
+// ===== AGENT MANAGEMENT =====
+function addCustomAgent() {
+  const name = document.getElementById('newAgentName').value.trim();
+  const desc = document.getElementById('newAgentDesc').value.trim();
+  const prompt = document.getElementById('newAgentPrompt').value.trim();
+  const color = document.getElementById('newAgentColor').value;
+  const model = document.getElementById('newAgentModel').value;
+  if (!name || !prompt) return showToast('Nama dan prompt wajib diisi','error');
+  const newAgent = { id:'custom-'+generateId(), name, desc, prompt, color, model, iconName:'Terminal' };
+  STATE.agents.push(newAgent);
+  saveAgents();
+  renderAgents();
+  closeModal('agentModal');
+  showToast(`Agen "${name}" ditambahkan!`,'success');
+  ['newAgentName','newAgentDesc','newAgentPrompt'].forEach(id => document.getElementById(id).value = '');
+}
+
+function resetAgents() {
+  if (!confirm('Reset semua agen ke default? Agen kustom akan dihapus.')) return;
+  STATE.agents = JSON.parse(JSON.stringify(DEFAULT_AGENTS));
+  saveAgents();
+  renderAgents();
+  closeModal('agentModal');
+  showToast('Agen direset ke default','success');
+}
+
+// ===== API KEY =====
+function saveApiKey() {
+  const val = document.getElementById('apiKeyInput').value.trim();
+  if (!val) return showToast('API Key wajib diisi!','error');
+  STATE.apiKey = val;
+  localStorage.setItem('nx_apikey', val);
+  updateApiKeyStatus();
+  closeModal('apiModal');
+  showToast('API Key tersimpan!','success');
+}
+
+function updateApiKeyStatus() {
+  const el = document.getElementById('apiKeyStatus');
+  if (STATE.apiKey) {
+    el.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#39d353" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>';
+  } else {
+    el.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ff3333" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>';
+  }
+  if (document.getElementById('apiKeyInput')) {
+    document.getElementById('apiKeyInput').value = STATE.apiKey;
+  }
+}
+
+// ===== CODE MODAL =====
+function openCodeModal() {
+  const proj = getProject();
+  renderCodeVersionList();
+  if (proj?.codeVersions?.length > 0 && !STATE.selectedVersionId) {
+    STATE.selectedVersionId = proj.codeVersions[proj.codeVersions.length - 1].id;
+  }
+  renderCodeContent();
+  openModal('codeModal');
+}
+
+function openCodeModalFromPipeline() {
+  document.getElementById('pipelinePopup').classList.remove('show');
+  const proj = getProject();
+  if (proj?.codeVersions?.length > 0) {
+    STATE.selectedVersionId = proj.codeVersions[proj.codeVersions.length - 1].id;
+    STATE.codeTab = 'diff';
+  }
+  setCodeTab('diff');
+  openCodeModal();
+}
+
+function renderCodeVersionList() {
+  const proj = getProject();
+  const versions = proj?.codeVersions || [];
+  const container = document.getElementById('codeVersionList');
+  if (!versions.length) {
+    container.innerHTML = '<div style="padding:20px;font-size:11px;color:#666;text-align:center;">Belum ada kode.</div>';
+    return;
+  }
+  container.innerHTML = versions.map((v,i) => {
+    const agent = STATE.agents.find(a => a.id === v.agentId);
+    return `
+      <div class="code-version-item ${v.id === STATE.selectedVersionId ? 'active' : ''}" onclick="selectVersion('${v.id}')">
+        <div class="code-version-num">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="${v.id===STATE.selectedVersionId?'var(--accent)':'#555'}" stroke-width="2"><circle cx="12" cy="12" r="4"/><line x1="1.05" y1="12" x2="7" y2="12"/><line x1="17.01" y1="12" x2="22.96" y2="12"/></svg>
+          Versi ${i+1}
+        </div>
+        <div class="code-version-time">${formatTime(v.timestamp)}</div>
+        <div class="code-version-agent" style="color:${agent?.color||'#fff'}">
+          ${getSvgIcon(v.agentId,11,'currentColor')} ${agent?.name||v.agentId}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function selectVersion(id) {
+  STATE.selectedVersionId = id;
+  renderCodeVersionList();
+  renderCodeContent();
+  document.getElementById('codeActions').style.display = 'flex';
+}
+
+function setCodeTab(tab) {
+  STATE.codeTab = tab;
+  ['code','diff','preview'].forEach(t => {
+    document.getElementById('tab'+t.charAt(0).toUpperCase()+t.slice(1))?.classList.remove('active');
+  });
+  document.getElementById('tab'+tab.charAt(0).toUpperCase()+tab.slice(1))?.classList.add('active');
+  renderCodeContent();
+}
+
+function renderCodeContent() {
+  const proj = getProject();
+  const container = document.getElementById('codeContent');
+  if (!STATE.selectedVersionId || !proj?.codeVersions?.length) {
+    container.innerHTML = '<div class="code-empty">Pilih versi di panel kiri</div>';
+    return;
+  }
+  const idx = proj.codeVersions.findIndex(v => v.id === STATE.selectedVersionId);
+  const cur = proj.codeVersions[idx];
+  const prev = idx > 0 ? proj.codeVersions[idx-1] : null;
+
+  if (STATE.codeTab === 'preview') {
+    container.innerHTML = `<iframe srcdoc="${escHtml(cur.code)}" sandbox="allow-scripts allow-modals" style="width:100%;height:100%;border:none;background:#fff;"></iframe>`;
+    return;
+  }
+  if (STATE.codeTab === 'diff') {
+    const { diffs, added, removed } = computeDiff(prev?.code || '', cur.code);
+    const diffHtml = diffs.map(d => `
+      <div class="diff-line ${d.type}">${d.type==='added'?'+ ':d.type==='removed'?'- ':'  '}${escHtml(d.text)}</div>
+    `).join('');
+    container.innerHTML = `
+      <div class="diff-analytics">
+        <span style="color:#888;font-size:11px;font-weight:700;">vs Versi ${idx}:</span>
+        <span class="diff-added">+${added} ditambah</span>
+        <span class="diff-removed">-${removed} dihapus</span>
+      </div>
+      <div style="padding:4px 0;">${diffHtml}</div>
+    `;
+    return;
+  }
+  // Code view
+  container.innerHTML = `<pre><code class="language-javascript">${escHtml(cur.code)}</code></pre>`;
+  const codeEl = container.querySelector('code');
+  if (window.hljs && codeEl) { delete codeEl.dataset.highlighted; hljs.highlightElement(codeEl); }
+}
+
+function computeDiff(oldCode, newCode) {
+  if (!oldCode) {
+    const lines = newCode.split('\n');
+    return { diffs: lines.map(t=>({type:'added',text:t})), added:lines.length, removed:0 };
+  }
+  const oldLines = oldCode.split('\n'), newLines = newCode.split('\n');
+  const diffs = []; let i=0, j=0, added=0, removed=0;
+  while (i < oldLines.length || j < newLines.length) {
+    if (i < oldLines.length && j < newLines.length && oldLines[i] === newLines[j]) {
+      diffs.push({ type:'unchanged', text:oldLines[i] }); i++; j++;
+    } else {
+      let fi=-1, fj=-1;
+      for (let k=j; k<Math.min(j+8,newLines.length); k++) { if (oldLines[i]===newLines[k]) { fj=k; break; } }
+      for (let k=i; k<Math.min(i+8,oldLines.length); k++) { if (oldLines[k]===newLines[j]) { fi=k; break; } }
+      if (fj!==-1 && (fi===-1||(fj-j)<=(fi-i))) {
+        while(j<fj){ diffs.push({type:'added',text:newLines[j]}); added++; j++; }
+      } else if (fi!==-1) {
+        while(i<fi){ diffs.push({type:'removed',text:oldLines[i]}); removed++; i++; }
+      } else {
+        if (i<oldLines.length){ diffs.push({type:'removed',text:oldLines[i]}); removed++; i++; }
+        if (j<newLines.length){ diffs.push({type:'added',text:newLines[j]}); added++; j++; }
+      }
+    }
+  }
+  return { diffs, added, removed };
+}
+
+function downloadSelectedCode() {
+  const proj = getProject();
+  const ver = proj?.codeVersions?.find(v => v.id === STATE.selectedVersionId);
+  if (!ver) return;
+  const blob = new Blob([ver.code], { type:'text/plain' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = `nexus-code-v${proj.codeVersions.indexOf(ver)+1}.html`; a.click();
+}
+
+function copySelectedCode() {
+  const proj = getProject();
+  const ver = proj?.codeVersions?.find(v => v.id === STATE.selectedVersionId);
+  if (!ver) return;
+  navigator.clipboard.writeText(ver.code).then(() => showToast('Kode tersalin!','success'));
+}
+
+// ===== MODALS =====
+function openModal(id) {
+  if (id === 'projectModal') renderProjectList();
+  if (id === 'analyticsModal') openAnalyticsModal();
+  if (id === 'apiModal') updateApiKeyStatus();
+  document.getElementById(id).classList.add('show');
+}
+function closeModal(id) {
+  document.getElementById(id).classList.remove('show');
+  STATE.editingProjectId = null;
+}
+document.addEventListener('keydown', e => { if (e.key==='Escape') { document.querySelectorAll('.modal-overlay.show').forEach(m=>m.classList.remove('show')); } });
+document.querySelectorAll('.modal-overlay').forEach(el => {
+  el.addEventListener('click', e => { if (e.target === el) el.classList.remove('show'); });
+});
+
+// ===== SIDEBAR (MOBILE) =====
+function openSidebar() {
+  document.getElementById('sidebar').classList.add('open');
+  document.getElementById('sidebarOverlay').classList.add('show');
+  document.getElementById('sidebarClose').style.display = 'block';
+}
+function closeSidebar() {
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sidebarOverlay').classList.remove('show');
+  document.getElementById('sidebarClose').style.display = 'none';
+}
+
+// ===== UTILS =====
+function formatTime(ts) {
+  return new Intl.DateTimeFormat('id-ID', { dateStyle:'short', timeStyle:'short' }).format(new Date(ts));
+}
+
+function getSvgIcon(agentId, size=16, color='currentColor') {
+  const s = size;
+  const icons = {
+    planner: `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>`,
+    frontend: `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="M2 2l7.586 7.586"/><circle cx="11" cy="11" r="2"/></svg>`,
+    feature: `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>`,
+    bugtracker: `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`,
+    reviewer: `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>`,
+    security: `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>`,
+    memory: `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>`,
+    squad: `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>`
+  };
+  return icons[agentId] || `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>`;
+}
+
+// ===== KEYBOARD SHORTCUTS =====
+document.addEventListener('keydown', e => {
+  if (e.metaKey || e.ctrlKey) {
+    const num = parseInt(e.key);
+    if (num >= 1 && num <= STATE.agents.length) {
+      e.preventDefault();
+      switchAgent(STATE.agents[num-1].id);
+    }
+    if (e.key === 'k') { e.preventDefault(); document.getElementById('chatInput').focus(); }
+  }
+});
+
+// ===== BOOT =====
+window.addEventListener('DOMContentLoaded', async () => {
+  await initApp();
+
+  // Pre-populate slash menu
+  renderSlashMenu();
+
+  // Wire up sidebar shortcut buttons to correct functions  
+  document.querySelector('[onclick="openModal(\'projectModal\')"]')?.addEventListener('click', () => openModal('projectModal'));
+
+  // Show login
+  document.getElementById('loginScreen').classList.add('show');
+
+  // If API key exists, auto-populate
+  if (STATE.apiKey) {
+    const inp = document.getElementById('apiKeyInput');
+    if (inp) inp.value = STATE.apiKey;
+  }
+});
+</script>
 </body>
 </html>
