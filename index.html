@@ -1,0 +1,925 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NEXUS-6 | Enterprise AI Studio</title>
+  
+  <!-- Tailwind CSS (CDN) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Highlight.js untuk Syntax Highlighting Code -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/atom-one-dark.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+  
+  <!-- Babel Standalone (Agar bisa menulis React JSX langsung di HTML) -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Syne:wght@500;700;800&display=swap');
+    
+    :root {
+      --bg-main: #070707;
+      --bg-panel: #121212;
+      --accent: #ccff00; 
+      --accent-hover: #aadd00;
+      --text-main: #e0e0e0;
+      --text-muted: #888888;
+      --border-color: #2a2a2a;
+      --agent-tint: transparent;
+    }
+
+    body {
+      background-color: var(--bg-main);
+      color: var(--text-main);
+      font-family: 'JetBrains Mono', monospace;
+      margin: 0;
+      overflow: hidden;
+      position: relative;
+    }
+
+    body::before {
+      content: ""; position: absolute; inset: 0; z-index: -1;
+      background-color: var(--agent-tint); transition: background-color 0.5s ease;
+      pointer-events: none;
+    }
+
+    body::after {
+      content: ""; position: absolute; inset: 0; z-index: -1; opacity: 0.04; pointer-events: none;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+    }
+
+    h1, h2, h3, .font-display { font-family: 'Syne', sans-serif; }
+    .brutal-border { border: 1px solid var(--border-color); }
+    .brutal-shadow { box-shadow: 4px 4px 0px var(--accent); transition: all 0.2s ease; }
+    .brutal-shadow:active { box-shadow: 1px 1px 0px var(--accent); transform: translate(3px, 3px); }
+    
+    .agent-btn { transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); }
+    .agent-btn.active { background-color: var(--accent); color: #000; border-color: var(--accent); box-shadow: 4px 4px 0px rgba(0,0,0,0.5); }
+    .agent-btn:hover:not(.active) { border-color: var(--accent); color: var(--accent); padding-left: 1.5rem; }
+
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 0; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+
+    .msg-enter { animation: slideIn 0.3s ease forwards; opacity: 0; transform: translateY(10px); }
+    @keyframes slideIn { to { opacity: 1; transform: translateY(0); } }
+    .toast-enter { animation: toastIn 0.4s cubic-bezier(0.25, 0.8, 0.25, 1) forwards; }
+    @keyframes toastIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+    .glitch-text:hover { animation: glitch 0.2s linear infinite; }
+    @keyframes glitch { 0% { transform: translate(0) } 20% { transform: translate(-2px, 1px) } 40% { transform: translate(-1px, -1px) } 60% { transform: translate(2px, 1px) } 80% { transform: translate(1px, -1px) } 100% { transform: translate(0) } }
+
+    .scanlines::before {
+      content: " "; display: block; position: absolute; inset: 0; z-index: 50; pointer-events: none;
+      background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+      background-size: 100% 2px, 3px 100%;
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <!-- Script utama aplikasi React -->
+  <script type="text/babel" data-type="module">
+    // Import React dan ReactDOM dari esm.sh
+    import React, { useState, useEffect, useRef, useCallback } from 'https://esm.sh/react@18.2.0';
+    import { createRoot } from 'https://esm.sh/react-dom@18.2.0/client';
+    
+    // Import Icon dari Lucide React
+    import { 
+      Terminal, PenTool, CheckSquare, ShieldAlert, 
+      Database, Users, Send, Loader2, Code2, Layers, Cpu,
+      Folder, Plus, X, Clock, ArrowRight, Copy, Check,
+      GitCommit, GitCompare, History, FileCode2, AlertTriangle, 
+      PlusCircle, Lightbulb, Zap, CheckCircle2, Play,
+      Key, Trash2, Edit2, Upload, StopCircle, Eye, Menu, AlertCircle, Download,
+      Mic, Search, Share2, BarChart2, Settings, LogIn, Filter, Pin, Command, FileText
+    } from 'https://esm.sh/lucide-react@0.292.0';
+
+    // --- GOOGLE APPS SCRIPT INTEGRATION ---
+    // Menggunakan URL milik Anda
+    const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzr1aGZfm-lZdxWQ9zxX5IG20YQKTV45Ydr5xqE9plVFiQ1Gaa7eTUwwf9bhPoFL1cA/exec';
+
+    const cloudStore = {
+      getProjects: async () => {
+        try {
+          const res = await fetch(APPS_SCRIPT_URL);
+          if (!res.ok) throw new Error("Gagal mengambil data dari Google Sheets");
+          const data = await res.json();
+          return data.map(p => ({
+            id: p.id,
+            name: p.name,
+            updatedAt: new Date(p.updatedAt).getTime() || Date.now(),
+            messages: p.data?.messages || {},
+            codeVersions: p.data?.codeVersions || [],
+            analytics: p.data?.analytics || { runs: 0, tokens: 0, timeSpent: 0 },
+            knowledgeBase: p.data?.knowledgeBase || []
+          }));
+        } catch (e) {
+          console.error("Cloud Error:", e);
+          return [];
+        }
+      },
+      saveProject: async (project) => {
+        try {
+          const payload = {
+            id: project.id,
+            name: project.name,
+            data: {
+              messages: project.messages,
+              codeVersions: project.codeVersions,
+              analytics: project.analytics,
+              knowledgeBase: project.knowledgeBase
+            }
+          };
+          
+          await fetch(APPS_SCRIPT_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify(payload)
+          });
+          console.log(`[Cloud Sync]: Project ${project.name} tersimpan.`);
+        } catch (e) {
+          console.error("Save Cloud Error:", e);
+        }
+      }
+    };
+
+    const DEFAULT_AGENTS = [
+      { id: 'planner', name: 'Architect / Planner', iconName: 'Layers', color: '#ccff00', desc: 'Merancang arsitektur sistem.', model: 'pro' },
+      { id: 'frontend', name: 'Frontend Aesthetic', iconName: 'PenTool', color: '#ff00ff', desc: 'Desain UI/UX & Implementasi visual.', model: 'flash' },
+      { id: 'feature', name: 'Feature Expander', iconName: 'PlusCircle', color: '#00ffcc', desc: 'Penambahan fitur inovatif baru.', model: 'pro' },
+      { id: 'bugtracker', name: 'Bug Tracker', iconName: 'AlertTriangle', color: '#ff3333', desc: 'Perbaikan error & bug squashing.', model: 'flash' },
+      { id: 'reviewer', name: 'Code Reviewer', iconName: 'CheckSquare', color: '#00ffff', desc: 'Memastikan standar kualitas kode (PR).', model: 'pro' },
+      { id: 'security', name: 'SecOps Scanner', iconName: 'ShieldAlert', color: '#ff9900', desc: 'Pemindaian kerentanan (XSS, Injection).', model: 'pro' },
+      { id: 'evaluator', name: 'Evaluator (Auto-QA)', iconName: 'CheckCircle', color: '#00ff55', desc: 'Verifikasi akhir dari pipeline.', model: 'flash' }
+    ];
+
+    const TEMPLATES = [
+      { trigger: '/ui', title: 'Buat UI Komponen', text: 'Tolong buatkan komponen UI untuk [NAMA FITUR] menggunakan React & Tailwind dengan estetika Brutalist modern.' },
+      { trigger: '/refactor', title: 'Refactor Kode', text: 'Tolong refactor kode terakhir agar lebih bersih, efisien, dan modular. Terapkan prinsip SOLID.' },
+      { trigger: '/fix', title: 'Cari Bug / Error', text: 'Saya mendapatkan error ini: \n\n```\n[PASTE ERROR]\n```\n\nTolong analisis dan berikan perbaikannya.' }
+    ];
+
+    const generateId = () => Date.now().toString(36) + '-' + Math.random().toString(36).substring(2, 9);
+
+    const IconRenderer = ({ name, ...props }) => {
+      const icons = { Layers, PenTool, PlusCircle, AlertTriangle, CheckSquare, ShieldAlert, Database, Users, Code2, Zap, Terminal, CheckCircle: CheckCircle2 };
+      const Icon = icons[name] || Terminal;
+      return <Icon {...props} />;
+    };
+
+    const CodeBlock = ({ code, language, filename }) => {
+      const codeRef = useRef(null);
+      useEffect(() => {
+        if (window.hljs && codeRef.current) {
+          delete codeRef.current.dataset.highlighted;
+          window.hljs.highlightElement(codeRef.current);
+        }
+      }, [code]);
+      return (
+        <div className="bg-[#0a0a0a] border border-[#2a2a2a] my-3 brutal-border overflow-hidden rounded-sm">
+          {(filename || language) && (
+            <div className="bg-[#111] px-3 py-1.5 border-b border-[#2a2a2a] flex justify-between items-center text-[10px] text-[#888] font-bold uppercase tracking-wider">
+              <span>{filename || 'Code Block'}</span>
+              <span>{language}</span>
+            </div>
+          )}
+          <pre className="p-4 overflow-x-auto text-sm text-[#e0e0e0] m-0"><code ref={codeRef} className={`language-${language || 'javascript'}`}>{code}</code></pre>
+        </div>
+      );
+    };
+
+    const TypewriterText = ({ text, onComplete }) => {
+      const [displayedText, setDisplayedText] = useState('');
+      
+      useEffect(() => {
+        let i = 0;
+        const chunkSize = Math.max(1, Math.floor(text.length / 50)); 
+        const interval = setInterval(() => {
+          setDisplayedText(text.slice(0, i));
+          i += chunkSize;
+          if (i > text.length) {
+            setDisplayedText(text);
+            clearInterval(interval);
+            if(onComplete) onComplete();
+          }
+        }, 20); 
+        
+        return () => clearInterval(interval);
+      }, [text]);
+
+      const renderContent = (content) => {
+        const parts = content.split(/(```[\s\S]*?```)/g);
+        return parts.map((part, i) => {
+          if (part.startsWith('```') && part.endsWith('```')) {
+            const lines = part.slice(3, -3).split('\n');
+            const firstLine = lines.shift() || '';
+            const [lang, filename] = firstLine.split(':');
+            return <CodeBlock key={i} code={lines.join('\n')} language={lang?.trim()} filename={filename?.trim()} />;
+          }
+          
+          let safeText = part.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); 
+          safeText = safeText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>'); 
+          safeText = safeText.replace(/`(.*?)`/g, '<code class="bg-[#1a1a1a] text-[var(--accent)] px-1 py-0.5 rounded text-sm">$1</code>'); 
+          return <div key={i} dangerouslySetInnerHTML={{ __html: safeText }} className="mb-2 break-words leading-relaxed" />;
+        });
+      };
+
+      return <>{renderContent(displayedText)}</>;
+    };
+
+    function App() {
+      // API Key untuk Github Pages user (Disimpan di LocalStorage)
+      const [apiKey, setApiKey] = useState(() => localStorage.getItem('nexus_apikey') || '');
+      const [isAuthenticated, setIsAuthenticated] = useState(false);
+      const [isCloudSyncing, setIsCloudSyncing] = useState(false);
+      
+      const [agents, setAgents] = useState(DEFAULT_AGENTS);
+      const [projects, setProjects] = useState([]);
+      const [activeProjectId, setActiveProjectId] = useState(null);
+      const [activeAgentId, setActiveAgentId] = useState('planner');
+      
+      const [input, setInput] = useState('');
+      const [isTyping, setIsTyping] = useState(false);
+      const [searchQuery, setSearchQuery] = useState('');
+      const [filterMode, setFilterMode] = useState('all'); 
+      const [slashMenuOpen, setSlashMenuOpen] = useState(false);
+      const [isListening, setIsListening] = useState(false);
+      
+      const [newProjectName, setNewProjectName] = useState('');
+      const [editingProjectId, setEditingProjectId] = useState(null);
+      const [editProjectName, setEditProjectName] = useState('');
+      const [copiedId, setCopiedId] = useState(null);
+      
+      const [showProjectModal, setShowProjectModal] = useState(false);
+      const [showCodeModal, setShowCodeModal] = useState(false);
+      const [showAgentModal, setShowAgentModal] = useState(false);
+      const [showAnalyticsModal, setShowAnalyticsModal] = useState(false);
+      const [showCommandPalette, setShowCommandPalette] = useState(false);
+      const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+      const [toast, setToast] = useState(null);
+
+      const [selectedVersionId, setSelectedVersionId] = useState(null);
+      const [codeViewMode, setCodeViewMode] = useState('code'); 
+      const [activeFileTab, setActiveFileTab] = useState(0);
+      
+      const [isAutoRunning, setIsAutoRunning] = useState(false);
+      const [autoStatusText, setAutoStatusText] = useState('');
+      const [showCompletePopup, setShowCompletePopup] = useState(false);
+      const autoAbortRef = useRef(false);
+
+      const messagesEndRef = useRef(null);
+      const textareaRef = useRef(null);
+      const fileInputRef = useRef(null); 
+
+      const activeProject = projects.find(p => p.id === activeProjectId);
+      const activeAgent = agents.find(a => a.id === activeAgentId) || agents[0];
+      const nextAgent = agents[agents.findIndex(a => a.id === activeAgentId) + 1];
+
+      const currentChatMsgs = activeProject?.messages[activeAgentId] || [];
+      const approxTokens = Math.floor(JSON.stringify(currentChatMsgs).length / 4);
+      const isHighContext = approxTokens > 15000;
+
+      // INITIALIZATION & CLOUD PULL
+      useEffect(() => {
+        if (!isAuthenticated) return;
+
+        const loadData = async () => {
+          const savedAgents = localStorage.getItem('nexus_agents');
+          const loadedAgents = savedAgents ? JSON.parse(savedAgents) : DEFAULT_AGENTS;
+          if (savedAgents) setAgents(loadedAgents);
+          
+          setIsCloudSyncing(true);
+          let savedProjects = await cloudStore.getProjects();
+          
+          if (savedProjects.length === 0) {
+            const initProj = { 
+              id: `proj-${generateId()}`, name: 'Project Alpha', updatedAt: Date.now(), 
+              messages: {}, codeVersions: [], analytics: { runs: 0, tokens: 0, timeSpent: 0 }, knowledgeBase: [] 
+            };
+            loadedAgents.forEach(a => initProj.messages[a.id] = [{ id: generateId(), role: 'system', text: `**${a.name}** online. Cloud DB Google Sheets Terhubung.\nSiap mengeksekusi instruksi.`, timestamp: new Date().toLocaleTimeString(), isStreaming: false }]);
+            savedProjects = [initProj];
+            cloudStore.saveProject(initProj); 
+          }
+          setProjects(savedProjects);
+          setActiveProjectId(savedProjects[0].id);
+          setIsCloudSyncing(false);
+        };
+        loadData();
+      }, [isAuthenticated]);
+
+      // DEBOUNCED CLOUD SAVE
+      useEffect(() => {
+        if (!isAuthenticated || projects.length === 0 || isCloudSyncing) return;
+        setIsCloudSyncing(true);
+        const timeoutId = setTimeout(() => {
+          const projToSave = projects.find(p => p.id === activeProjectId);
+          if (projToSave) {
+            cloudStore.saveProject(projToSave).then(() => setIsCloudSyncing(false));
+          }
+        }, 2500);
+        return () => { clearTimeout(timeoutId); setIsCloudSyncing(false); };
+      }, [projects, activeProjectId]);
+
+      useEffect(() => { if (agents !== DEFAULT_AGENTS) localStorage.setItem('nexus_agents', JSON.stringify(agents)); }, [agents]);
+      useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [activeProject?.messages, isTyping, autoStatusText]);
+
+      useEffect(() => {
+        if(activeAgent) {
+          const hex = activeAgent.color;
+          const r = parseInt(hex.slice(1,3), 16), g = parseInt(hex.slice(3,5), 16), b = parseInt(hex.slice(5,7), 16);
+          document.documentElement.style.setProperty('--agent-tint', `rgba(${r},${g},${b},0.03)`);
+          document.documentElement.style.setProperty('--accent', activeAgent.color);
+        }
+      }, [activeAgent]);
+
+      useEffect(() => {
+        const handleKeyDown = (e) => {
+          const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+          const cmdKey = isMac ? e.metaKey : e.ctrlKey;
+          if (cmdKey) {
+            if (e.key >= '1' && e.key <= '8') { e.preventDefault(); const idx = parseInt(e.key) - 1; if (agents[idx]) setActiveAgentId(agents[idx].id); }
+            else if (e.key.toLowerCase() === 'k') { e.preventDefault(); setShowCommandPalette(p => !p); }
+            else if (e.key === '/') { e.preventDefault(); setSlashMenuOpen(true); textareaRef.current?.focus(); }
+          }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+      }, [agents]);
+
+      const showToast = useCallback((message, type = 'error') => {
+        setToast({ message, type, id: generateId() });
+        setTimeout(() => setToast(null), 4000);
+      }, []);
+
+      const handleCopyText = (text, id) => {
+        const ta = document.createElement("textarea"); ta.value = text; document.body.appendChild(ta); ta.select();
+        try { document.execCommand('copy'); setCopiedId(id); setTimeout(() => setCopiedId(null), 2000); } 
+        catch (err) { showToast('Gagal menyalin', 'error'); }
+        document.body.removeChild(ta);
+      };
+
+      const handleDownloadCode = (content, ext, filename) => {
+        const blob = new Blob([content], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a'); a.href = url; a.download = filename || `nexus-export.${ext}`; a.click();
+        URL.revokeObjectURL(url);
+      };
+
+      const formatTime = (ts) => new Intl.DateTimeFormat('id-ID', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(ts));
+
+      const togglePinMessage = (msgId) => {
+        setProjects(prev => prev.map(p => {
+          if(p.id !== activeProjectId) return p;
+          const msgs = p.messages[activeAgentId].map(m => m.id === msgId ? {...m, pinned: !m.pinned} : m);
+          return {...p, messages: {...p.messages, [activeAgentId]: msgs}};
+        }));
+      };
+
+      const handleFileUpload = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        if (file.size > 2000000) return showToast("File terlalu besar (Maks 2MB)", "error"); 
+        
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          const text = ev.target.result;
+          const chunks = text.split('\n\n').map(c => c.trim()).filter(c => c.length > 20);
+          setProjects(prev => prev.map(p => {
+            if(p.id !== activeProjectId) return p;
+            const newKb = [...(p.knowledgeBase || []), { filename: file.name, chunks }];
+            return {...p, knowledgeBase: newKb};
+          }));
+          showToast(`File ${file.name} berhasil diindeks (RAG)`, "success");
+        };
+        reader.readAsText(file);
+        e.target.value = null; 
+      };
+
+      const retrieveRAGContext = (userQuery) => {
+        const kb = activeProject?.knowledgeBase || [];
+        if (kb.length === 0) return '';
+        const keywords = userQuery.toLowerCase().split(/\W+/).filter(w => w.length > 3);
+        if (keywords.length === 0) return '';
+
+        let matchedChunks = [];
+        kb.forEach(file => {
+          file.chunks.forEach(chunk => {
+            const lowerChunk = chunk.toLowerCase();
+            let score = 0;
+            keywords.forEach(k => { if(lowerChunk.includes(k)) score++; });
+            if(score > 0) matchedChunks.push({ chunk, score, filename: file.filename });
+          });
+        });
+        matchedChunks.sort((a,b) => b.score - a.score);
+        const topChunks = matchedChunks.slice(0, 3); 
+        if (topChunks.length === 0) return '';
+        return `\n[KONTEKS RAG DARI FILE PROJECT]:\n${topChunks.map(c => `(Dari ${c.filename}): ${c.chunk}`).join('\n\n')}\n`;
+      };
+
+      const extractMultiFiles = (text) => {
+        const files = [];
+        const regex = new RegExp('\`\`\`([a-zA-Z0-9]+)?(?:[:]([a-zA-Z0-9._-]+))?\\n([\\s\\S]*?)\`\`\`', 'g');
+        let match;
+        while ((match = regex.exec(text)) !== null) {
+          files.push({
+            language: match[1] || 'text',
+            filename: match[2] || `file-${files.length + 1}.${match[1] === 'html' ? 'html' : match[1] === 'css' ? 'css' : 'js'}`,
+            code: match[3].trim()
+          });
+        }
+        if (files.length === 0) {
+          const rxCode = new RegExp('\`\`\`(?:[a-zA-Z0-9]+)?\\n([\\s\\S]*?)\`\`\`', 'g');
+          let basicMatches = []; let m2;
+          while ((m2 = rxCode.exec(text)) !== null) basicMatches.push(m2[1].trim());
+          basicMatches.forEach((code, i) => files.push({ language: 'javascript', filename: `snippet-${i+1}.js`, code }));
+        }
+        return files;
+      };
+
+      const computeHeuristicDiff = (oldCode, newCode) => {
+        if (!oldCode) return { diffs: newCode.split('\n').map(t => ({ type: 'added', text: t })), added: newCode.split('\n').length, removed: 0 };
+        const oldLines = oldCode.split('\n'), newLines = newCode.split('\n');
+        let diffs = [], i = 0, j = 0, added = 0, removed = 0;
+        while (i < oldLines.length || j < newLines.length) {
+          if (i < oldLines.length && j < newLines.length && oldLines[i] === newLines[j]) {
+            diffs.push({ type: 'unchanged', text: oldLines[i] }); i++; j++;
+          } else {
+            let foundInNew = -1, foundInOld = -1;
+            for (let k = j; k < Math.min(j + 8, newLines.length); k++) { if (oldLines[i] === newLines[k]) { foundInNew = k; break; } }
+            for (let k = i; k < Math.min(i + 8, oldLines.length); k++) { if (oldLines[k] === newLines[j]) { foundInOld = k; break; } }
+            if (foundInNew !== -1 && (foundInOld === -1 || (foundInNew - j) <= (foundInOld - i))) {
+              while (j < foundInNew) { diffs.push({ type: 'added', text: newLines[j] }); added++; j++; }
+            } else if (foundInOld !== -1) {
+              while (i < foundInOld) { diffs.push({ type: 'removed', text: oldLines[i] }); removed++; i++; }
+            } else {
+              if (i < oldLines.length) { diffs.push({ type: 'removed', text: oldLines[i] }); removed++; i++; }
+              if (j < newLines.length) { diffs.push({ type: 'added', text: newLines[j] }); added++; j++; }
+            }
+          }
+        }
+        return { diffs, added, removed };
+      };
+
+      const callGeminiAPI = async (userText, modelPref = 'flash') => {
+        if (!apiKey) throw new Error("Gemini API Key tidak ditemukan!");
+        const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+        const payload = { contents: [{ parts: [{ text: userText }] }] };
+        for (let i = 0; i < 3; i++) {
+          try {
+            if(autoAbortRef.current) throw new Error("Aborted");
+            const response = await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+            const data = await response.json();
+            if (!response.ok) {
+               if (response.status === 429 && i < 2) { await new Promise(r => setTimeout(r, [1000, 3000][i])); continue; }
+               throw new Error(data.error?.message || `API Error: ${response.status}`);
+            }
+            return data.candidates?.[0]?.content?.parts?.[0]?.text || "Respons kosong.";
+          } catch (err) {
+            if(err.message === "Aborted" || i === 2) throw err;
+          }
+        }
+      };
+
+      const handleSend = async (e, customText = null, overrideHistory = null) => {
+        e?.preventDefault();
+        const textToSend = customText !== null ? customText : input;
+        if (!textToSend.trim() || isAutoRunning) return;
+
+        setSlashMenuOpen(false);
+        const userMsg = { id: generateId(), role: 'user', text: textToSend, timestamp: new Date().toLocaleTimeString() };
+
+        setProjects(prev => prev.map(p => {
+          if(p.id !== activeProjectId) return p;
+          const msgs = overrideHistory || p.messages[activeAgentId] || [];
+          return { ...p, messages: { ...p.messages, [activeAgentId]: [...msgs, userMsg] }, updatedAt: Date.now() };
+        }));
+        
+        if (customText === null) { setInput(''); if(textareaRef.current) textareaRef.current.style.height = '60px'; }
+        setIsTyping(true);
+        const startTime = Date.now();
+
+        try {
+          const proj = projects.find(p => p.id === activeProjectId);
+          const historyToUse = overrideHistory || proj.messages[activeAgentId] || [];
+          const contextText = historyToUse.map(m => `${m.role === 'user' ? 'User' : 'Agent'}: ${m.text}`).join('\n\n') + `\n\nUser: ${userMsg.text}`;
+          
+          const ragContext = retrieveRAGContext(userMsg.text);
+          const fullPrompt = `[System Instruction: ${activeAgent.prompt}]\n${ragContext}\nKonteks Percakapan:\n${contextText}`;
+          
+          const aiResponseText = await callGeminiAPI(fullPrompt, activeAgent.model);
+
+          const aiMsg = { id: generateId(), role: 'system', text: aiResponseText, timestamp: new Date().toLocaleTimeString(), isStreaming: true };
+          const parsedFiles = extractMultiFiles(aiResponseText);
+          const newCodeVersions = parsedFiles.length > 0 ? [{ id: `v-${generateId()}`, timestamp: Date.now(), agentId: activeAgentId, files: parsedFiles }] : [];
+
+          const timeSpent = Date.now() - startTime;
+          const tokensUsed = Math.floor(fullPrompt.length / 4) + Math.floor(aiResponseText.length / 4);
+
+          setProjects(prev => prev.map(p => p.id === activeProjectId ? {
+            ...p, 
+            messages: { ...p.messages, [activeAgentId]: [...(overrideHistory || p.messages[activeAgentId] || []), userMsg, aiMsg] },
+            codeVersions: [...(p.codeVersions || []), ...newCodeVersions], 
+            analytics: { ...p.analytics, tokens: (p.analytics?.tokens || 0) + tokensUsed, timeSpent: (p.analytics?.timeSpent || 0) + timeSpent },
+            updatedAt: Date.now()
+          } : p));
+        } catch (err) {
+          showToast(err.message, 'error');
+        } finally { setIsTyping(false); }
+      };
+
+      const handleEditMessage = (msgId) => {
+        const proj = projects.find(p => p.id === activeProjectId);
+        const msgs = proj.messages[activeAgentId];
+        const msgIndex = msgs.findIndex(m => m.id === msgId);
+        if(msgIndex === -1) return;
+        
+        setInput(msgs[msgIndex].text);
+        if(textareaRef.current) textareaRef.current.focus();
+        
+        textareaRef.current.dataset.overrideId = msgId;
+        textareaRef.current.dataset.truncatedStr = JSON.stringify(msgs.slice(0, msgIndex));
+      };
+
+      const handleInputKeyDown = (e) => {
+        if (e.key === '/') setSlashMenuOpen(true);
+        else if (e.key === 'Escape' || e.key === 'Backspace' && input === '') setSlashMenuOpen(false);
+        
+        if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+          e.preventDefault();
+          let override = null;
+          if (textareaRef.current?.dataset.overrideId) {
+            override = JSON.parse(textareaRef.current.dataset.truncatedStr);
+            delete textareaRef.current.dataset.overrideId;
+            delete textareaRef.current.dataset.truncatedStr;
+          }
+          handleSend(e, null, override);
+        }
+      };
+
+      const startAutoPipeline = async () => {
+        const featureRequest = document.getElementById('autoFeatureInput').value;
+        if (!featureRequest.trim() || isAutoRunning) return;
+        setIsAutoRunning(true); autoAbortRef.current = false;
+        document.getElementById('autoFeatureInput').value = '';
+
+        const initUserMsg = { id: generateId(), role: 'user', text: `[AUTO-PIPELINE REQUEST]: ${featureRequest}`, timestamp: new Date().toLocaleTimeString() };
+        setProjects(prev => prev.map(p => p.id === activeProjectId ? { ...p, messages: { ...p.messages, feature: [...(p.messages.feature || []), initUserMsg] } } : p));
+
+        const autoChain = ['planner', 'frontend', 'reviewer', 'security', 'evaluator'];
+        let lastOutput = featureRequest;
+        let isFirst = true;
+        let totalTokens = 0, pipelineTime = Date.now();
+
+        for (const agentId of autoChain) {
+          if (autoAbortRef.current) break;
+          const targetAgent = agents.find(a => a.id === agentId);
+          if(!targetAgent) continue;
+          
+          setActiveAgentId(agentId); setAutoStatusText(`Menghubungi ${targetAgent.name}...`); setIsTyping(true);
+          
+          const forwardPrompt = isFirst
+            ? `[SISTEM OTOMATIS]: Spesifikasi fitur:\n"${lastOutput}"\n\nTolong buat Rencana Arsitektur.`
+            : agentId === 'evaluator' 
+              ? `[EVALUATOR]: Analisis hasil akhir ini. Jika ada bug kritis atau UI buruk, katakan REVISE beserta perbaikannya. Jika aman, katakan PASS.\n\nHasil Akhir:\n"""\n${lastOutput}\n"""`
+              : `[HANDOFF]: Lanjutkan pengembangan dari agen sebelumnya:\n"""\n${lastOutput}\n"""`;
+          
+          isFirst = false;
+          const userMsg = { id: generateId(), role: 'user', text: forwardPrompt, timestamp: new Date().toLocaleTimeString() };
+          setProjects(prev => prev.map(p => p.id === activeProjectId ? { ...p, messages: { ...p.messages, [agentId]: [...(p.messages[agentId] || []), userMsg] } } : p));
+          
+          try {
+            const fullPrompt = `[System: ${targetAgent.prompt}]\n\n${userMsg.text}`;
+            const aiResponseText = await callGeminiAPI(fullPrompt, targetAgent.model); 
+            if (autoAbortRef.current) throw new Error("Aborted");
+
+            const aiMsg = { id: generateId(), role: 'system', text: aiResponseText, timestamp: new Date().toLocaleTimeString(), isStreaming: true };
+            const parsedFiles = extractMultiFiles(aiResponseText);
+            const newCodeVersions = parsedFiles.length > 0 ? [{ id: `v-${generateId()}`, timestamp: Date.now(), agentId, files: parsedFiles }] : [];
+
+            totalTokens += Math.floor(fullPrompt.length / 4) + Math.floor(aiResponseText.length / 4);
+
+            setProjects(prev => prev.map(p => p.id === activeProjectId ? { 
+              ...p, messages: { ...p.messages, [agentId]: [...(p.messages[agentId] || []), aiMsg] },
+              codeVersions: [...(p.codeVersions || []), ...newCodeVersions], updatedAt: Date.now()
+            } : p));
+            lastOutput = aiResponseText;
+
+            if (agentId === 'evaluator' && aiResponseText.includes('REVISE')) {
+               showToast("Evaluator menemukan masalah, menginisiasi revisi...", "warning");
+               autoChain.push('frontend'); 
+            }
+
+          } catch (err) {
+            if(err.message !== "Aborted") showToast(err.message, 'error'); break;
+          } finally { setIsTyping(false); }
+          await new Promise(r => setTimeout(r, 1500)); 
+        }
+
+        setIsAutoRunning(false); setAutoStatusText('');
+        
+        if (!autoAbortRef.current) {
+          setProjects(prev => prev.map(p => p.id === activeProjectId ? { 
+            ...p, analytics: { ...p.analytics, runs: (p.analytics?.runs || 0) + 1, tokens: (p.analytics?.tokens || 0) + totalTokens, timeSpent: (p.analytics?.timeSpent || 0) + (Date.now() - pipelineTime) } 
+          } : p));
+          setShowCompletePopup(true);
+        }
+      };
+
+      const handleCreateProject = (e) => {
+        e.preventDefault();
+        if (!newProjectName.trim()) return;
+        const initProj = { id: `proj-${generateId()}`, name: newProjectName.trim(), updatedAt: Date.now(), messages: {}, codeVersions: [], analytics: { runs: 0, tokens: 0, timeSpent: 0 }, knowledgeBase: [] };
+        agents.forEach(a => initProj.messages[a.id] = [{ id: generateId(), role: 'system', text: `**${a.name}** online. Cloud DB Terhubung.\nSiap mengeksekusi instruksi.`, timestamp: new Date().toLocaleTimeString(), isStreaming: false }]);
+        setProjects(prev => [initProj, ...prev]);
+        setActiveProjectId(initProj.id);
+        setNewProjectName('');
+      };
+
+      // Tampilan Autentikasi / API Setup
+      if (!isAuthenticated) {
+        return (
+          <div className="flex h-screen w-full items-center justify-center bg-[#070707] relative overflow-hidden font-mono">
+            <div className="bg-[#121212] brutal-border p-8 max-w-md w-full shadow-[12px_12px_0px_#ccff00] z-10 flex flex-col items-center text-center">
+              <Cpu size={56} className="text-[#ccff00] mb-4" />
+              <h1 className="font-display font-bold text-3xl mb-1 glitch-text text-white">NEXUS-6</h1>
+              <p className="text-[#888] text-xs uppercase tracking-widest mb-8">Cloud Edition (GitHub Pages)</p>
+              
+              <div className="text-left w-full mb-6 p-4 bg-[#111] border border-[#333] text-xs text-[#888]">
+                 <div className="flex items-center gap-2 mb-2 text-[#00ffcc] font-bold"><Database size={14}/> Sinkronisasi Aktif</div>
+                 Sistem ini menembak ke Endpoint Google Sheets Anda secara otomatis.
+              </div>
+
+              <div className="w-full mb-6">
+                <label className="block text-left text-[10px] text-[#888] uppercase tracking-widest mb-2 font-bold">Google Gemini API Key:</label>
+                <input 
+                  type="password" 
+                  value={apiKey} 
+                  onChange={(e) => setApiKey(e.target.value)} 
+                  placeholder="AIzaSy..." 
+                  className="w-full bg-[#0a0a0a] brutal-border p-3 text-sm focus:border-[#ccff00] outline-none text-white"
+                />
+                <p className="text-[9px] text-[#555] text-left mt-2">Dapatkan key gratis di Google AI Studio. Disimpan di Ujung Lokal Browser Anda (LocalStorage).</p>
+              </div>
+
+              <button onClick={() => {
+                if(!apiKey) return alert("API Key wajib diisi!");
+                localStorage.setItem('nexus_apikey', apiKey);
+                setIsAuthenticated(true);
+              }} className="w-full bg-[#ccff00] text-black p-4 font-bold uppercase tracking-wider brutal-border brutal-shadow hover:bg-[#aadd00] transition-all flex items-center justify-center gap-2">
+                <LogIn size={18} /> Masuk ke Canvas
+              </button>
+            </div>
+          </div>
+        );
+      }
+
+      // Main UI Logic Render (Ringkas, sisanya identik dengan yang sebelumnya)
+      const rawMessages = activeProject?.messages[activeAgentId] || [];
+      const currentMessages = rawMessages.filter(m => {
+        if(filterMode === 'code') return m.text.includes('```');
+        if(searchQuery) return m.text.toLowerCase().includes(searchQuery.toLowerCase());
+        return true;
+      });
+      const pinnedMessages = rawMessages.filter(m => m.pinned);
+
+      return (
+        <div className={`flex h-screen w-full relative font-mono text-sm ${isAutoRunning ? 'scanlines' : ''}`}>
+          
+          {/* TOASTS */}
+          {toast && (
+            <div className={`fixed top-4 right-4 z-[200] p-4 brutal-border flex items-center gap-3 toast-enter shadow-lg ${toast.type === 'error' ? 'bg-[#220000] border-[#ff3333] text-[#ff3333]' : toast.type === 'success' ? 'bg-[#002211] border-[#00ffcc] text-[#00ffcc]' : 'bg-[#221100] border-[#ffcc00] text-[#ffcc00]'}`}>
+              <AlertCircle size={20} /> <span className="font-bold text-xs uppercase tracking-wider text-white">{toast.message}</span>
+            </div>
+          )}
+
+          {/* PALETTE */}
+          {showCommandPalette && (
+            <div className="fixed inset-0 z-[150] bg-black/80 backdrop-blur-sm flex items-start justify-center pt-[20vh]" onClick={() => setShowCommandPalette(false)}>
+              <div className="bg-[#121212] brutal-border w-full max-w-lg shadow-[8px_8px_0px_var(--accent)]" onClick={e=>e.stopPropagation()}>
+                 <div className="p-4 border-b border-[#2a2a2a] flex items-center gap-3">
+                   <Command size={18} className="text-[var(--accent)]" />
+                   <input autoFocus type="text" placeholder="Ketik perintah (Switch Agent, Search...)" className="bg-transparent border-none outline-none w-full text-white" />
+                 </div>
+                 <div className="p-2 max-h-[40vh] overflow-y-auto">
+                    <div className="text-[10px] text-[#888] font-bold uppercase tracking-widest px-2 py-1">Agen (Cmd + 1-8)</div>
+                    {agents.map((a, i) => (
+                      <div key={a.id} onClick={() => { setActiveAgentId(a.id); setShowCommandPalette(false); }} className="flex items-center gap-3 p-3 hover:bg-[#1a1a1a] cursor-pointer">
+                        <span style={{color: a.color}}><IconRenderer name={a.iconName} size={14}/></span>
+                        <span className="text-sm font-bold text-white">{a.name}</span>
+                        <span className="ml-auto text-[10px] text-[#555] bg-[#0a0a0a] px-1.5 py-0.5 brutal-border">Cmd+{i+1}</span>
+                      </div>
+                    ))}
+                 </div>
+              </div>
+            </div>
+          )}
+
+          {/* SIDEBAR */}
+          {isSidebarOpen && <div className="fixed inset-0 bg-black/80 z-[40] md:hidden" onClick={() => setIsSidebarOpen(false)} />}
+          <div className={`fixed md:relative top-0 left-0 h-full w-[280px] md:w-80 brutal-border bg-[#121212] flex flex-col z-[50] transition-transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}>
+            <div className="p-5 border-b border-[#2a2a2a] shrink-0">
+              <div className="flex justify-between items-center mb-2">
+                <h1 className="font-display font-bold text-xl md:text-2xl tracking-tighter flex items-center gap-2 glitch-text text-white"><Cpu className="text-[var(--accent)]" /> NEXUS-6</h1>
+                <button onClick={() => setIsSidebarOpen(false)} className="md:hidden text-white"><X size={20}/></button>
+              </div>
+              <p className="text-[9px] text-[#888] uppercase tracking-widest mt-1">Multi-Agent Workspace v7.0</p>
+              <div className="flex items-center justify-between mt-4">
+                 <button onClick={() => setShowProjectModal(true)} className="text-[10px] uppercase text-[#888] hover:text-[var(--accent)] flex items-center gap-1"><Folder size={12}/> Projects</button>
+                 <button onClick={() => setShowAnalyticsModal(true)} className="text-[10px] uppercase text-[#888] hover:text-[var(--accent)] flex items-center gap-1"><BarChart2 size={12}/> Analytics</button>
+                 {isCloudSyncing && <Loader2 size={12} className="text-[#00ffcc] animate-spin" title="Syncing to Cloud..." />}
+              </div>
+            </div>
+            
+            <div className="flex-1 overflow-y-auto p-4 space-y-2 pb-20">
+              <div className="flex justify-between items-center mb-3">
+                 <span className="text-[10px] text-[#888] uppercase tracking-[0.2em] font-bold">Agen Aktif</span>
+                 <button onClick={() => setShowAgentModal(true)} className="text-[#888] hover:text-[#ccff00]" title="Custom Agent Builder"><Settings size={14}/></button>
+              </div>
+              {agents.map((agent) => (
+                <button key={agent.id} onClick={() => { setActiveAgentId(agent.id); setIsSidebarOpen(false); }} className={`w-full text-left p-3 brutal-border flex flex-col gap-1 agent-btn group ${activeAgentId === agent.id ? 'active brutal-shadow' : 'bg-[#0a0a0a] hover:bg-[#111111]'}`}>
+                  <div className="flex items-center gap-2 justify-between">
+                    <div className="flex items-center gap-2">
+                      <span style={{ color: activeAgentId === agent.id ? '#000' : agent.color }}><IconRenderer name={agent.iconName} size={16}/></span>
+                      <span className="font-display font-bold uppercase text-xs truncate text-white">{agent.name}</span>
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* MAIN */}
+          <div className="flex-1 flex flex-col bg-transparent w-full min-w-0">
+            <div className="h-16 border-b border-[#2a2a2a] flex items-center justify-between px-4 md:px-6 bg-[#070707]/80 backdrop-blur-md shrink-0">
+              <div className="flex items-center gap-3 min-w-0">
+                 <button onClick={() => setIsSidebarOpen(true)} className="md:hidden text-white"><Menu size={20}/></button>
+                 <h2 className="font-display font-bold uppercase tracking-widest text-white flex items-center gap-2 text-xs md:text-sm truncate">
+                   <span style={{ color: activeAgent.color }}><IconRenderer name={activeAgent.iconName} size={16}/></span>
+                   <span className="hidden sm:inline">{activeAgent.name}</span>
+                   <span className="text-[#888] font-normal normal-case border-l border-[#2a2a2a] pl-2 ml-1 truncate max-w-[120px] md:max-w-xs">{activeProject?.name}</span>
+                 </h2>
+              </div>
+              <div className="flex gap-2">
+                 <button onClick={() => document.getElementById('ragUpload')?.click()} className="hidden sm:flex items-center gap-1 px-3 py-1.5 border border-[#2a2a2a] hover:border-[var(--accent)] hover:text-[var(--accent)] brutal-border text-[10px] font-bold uppercase tracking-wider text-[#888]"><FileText size={12}/> RAG Files ({activeProject?.knowledgeBase?.length || 0})</button>
+                 <input type="file" id="ragUpload" onChange={handleFileUpload} className="hidden" accept=".txt,.md,.js,.json" />
+                 <button onClick={() => setShowCodeModal(true)} className="flex items-center gap-1 px-3 py-1.5 border border-[#2a2a2a] hover:border-[#00ffcc] hover:text-[#00ffcc] brutal-border text-[10px] font-bold uppercase tracking-wider text-[#888] relative">
+                   <Code2 size={12}/> Code
+                 </button>
+              </div>
+            </div>
+
+            {/* Area Obrolan */}
+            <div className="flex-1 overflow-y-auto p-4 md:p-8 space-y-6">
+              {currentMessages.map((msg) => (
+                <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} msg-enter group`}>
+                  <div className={`w-full md:max-w-[85%] p-4 md:p-5 brutal-border relative ${msg.role === 'user' ? 'bg-[#1a1a1a] border-[#333]' : 'bg-[#0a0a0a] border-[var(--border-color)]'}`} style={msg.role === 'system' ? { borderLeftColor: activeAgent.color, borderLeftWidth: '3px' } : {}}>
+                    <div className="flex justify-between items-center mb-3">
+                      <span className="text-[10px] uppercase tracking-widest font-bold" style={{ color: msg.role === 'system' ? activeAgent.color : '#888' }}>
+                        {msg.role === 'user' ? 'Anda' : activeAgent.name}
+                      </span>
+                      <div className="flex items-center gap-3">
+                        {msg.role === 'system' && (
+                          <button onClick={() => handleCopyText(msg.text, msg.id)} className="opacity-0 group-hover:opacity-100 text-[#888] hover:text-[#ccff00] flex items-center gap-1 text-[10px] uppercase"><Copy size={12}/> Salin</button>
+                        )}
+                        <span className="text-[10px] text-[#555]">{msg.timestamp}</span>
+                      </div>
+                    </div>
+                    <div className="text-sm text-[#e0e0e0] overflow-x-hidden">
+                      {msg.role === 'system' ? (
+                         msg.isStreaming ? (
+                           <TypewriterText text={msg.text} onComplete={() => {
+                             setProjects(prev => prev.map(p => p.id === activeProjectId ? {...p, messages: {...p.messages, [activeAgentId]: p.messages[activeAgentId].map(m => m.id === msg.id ? {...m, isStreaming: false} : m)}} : p));
+                           }}/>
+                         ) : renderMessageContent(msg.text)
+                      ) : <div className="whitespace-pre-wrap text-white">{msg.text}</div>}
+                    </div>
+                  </div>
+                </div>
+              ))}
+              {isTyping && (
+                <div className="flex justify-start msg-enter">
+                  <div className="p-4 brutal-border bg-[#0a0a0a] border-l-[3px]" style={{ borderLeftColor: activeAgent.color }}><Loader2 size={14} className="animate-spin inline mr-2" style={{ color: activeAgent.color }} /> <span className="text-[10px] uppercase tracking-widest text-[#888]">Agen sedang menganalisis...</span></div>
+                </div>
+              )}
+              <div ref={messagesEndRef} />
+            </div>
+
+            {/* Input Form */}
+            <div className="p-4 border-t border-[#2a2a2a] bg-[#121212] relative">
+              <form onSubmit={(e) => handleSend(e)} className="flex gap-2 max-w-5xl mx-auto items-end">
+                <div className="flex-1 relative flex items-end bg-[#0a0a0a] brutal-border focus-within:border-[var(--accent)] transition-colors">
+                  <textarea
+                    ref={textareaRef} value={input}
+                    onChange={(e) => { setInput(e.target.value); e.target.style.height = '60px'; e.target.style.height = Math.min(e.target.scrollHeight, 200) + 'px'; }}
+                    onKeyDown={handleInputKeyDown}
+                    placeholder={`Instruksi untuk ${activeAgent.name}...`}
+                    className="w-full bg-transparent p-3 pr-10 text-sm text-white outline-none resize-none min-h-[60px] max-h-[200px]"
+                    rows={1}
+                  />
+                </div>
+                <div className="flex gap-2 shrink-0 h-[60px]">
+                  <button type="submit" disabled={isTyping || !input.trim()} className="bg-[var(--accent)] text-black px-6 brutal-border font-bold disabled:opacity-50 hover:bg-[var(--accent-hover)] hover:brutal-shadow h-full transition-all"><Send size={18} /></button>
+                </div>
+              </form>
+            </div>
+          </div>
+
+          {/* PROJECT MODAL */}
+          {showProjectModal && (
+            <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+              <div className="bg-[#121212] brutal-border w-full max-w-3xl shadow-[8px_8px_0px_var(--accent)] flex flex-col max-h-[85vh]">
+                <div className="p-4 border-b border-[#2a2a2a] flex justify-between items-center bg-[#0a0a0a]">
+                  <h2 className="font-display font-bold text-lg uppercase tracking-widest flex items-center gap-2"><Database className="text-[var(--accent)]" size={18}/> Project Workspace</h2>
+                  <button onClick={() => setShowProjectModal(false)} className="text-[#888] hover:text-white"><X size={20} /></button>
+                </div>
+                <div className="p-6 flex-1 overflow-y-auto space-y-6">
+                  <form onSubmit={handleCreateProject} className="flex gap-3">
+                    <input type="text" value={newProjectName} onChange={(e) => setNewProjectName(e.target.value)} placeholder="Nama Project Baru..." className="flex-1 bg-[#0a0a0a] brutal-border p-3 text-sm focus:border-[var(--accent)] outline-none text-white" />
+                    <button type="submit" disabled={!newProjectName.trim()} className="bg-[var(--accent)] text-black px-6 font-bold font-display uppercase tracking-wider flex items-center gap-2 disabled:opacity-50"><Plus size={16} /> Buat</button>
+                  </form>
+                  <div className="space-y-3">
+                    <div className="flex justify-between text-xs text-[#888] uppercase tracking-widest font-bold mb-2">
+                      <span>Daftar Proyek ({projects.length})</span>
+                    </div>
+                    {projects.map(proj => (
+                      <div key={proj.id} className={`flex flex-col sm:flex-row sm:items-center justify-between p-4 brutal-border gap-4 ${activeProjectId === proj.id ? 'border-[var(--accent)] bg-[#0a0a0a]' : 'border-[#2a2a2a] hover:border-[#666]'}`}>
+                        <div className="flex-1 cursor-pointer" onClick={() => { setActiveProjectId(proj.id); setShowProjectModal(false); }}>
+                          <h4 className={`font-display font-bold text-lg truncate ${activeProjectId === proj.id ? 'text-[var(--accent)]' : 'text-white'}`}>{proj.name}</h4>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* CODE MODAL */}
+          {showCodeModal && (
+            <div className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-md flex items-center justify-center p-2 md:p-4 msg-enter">
+              <div className="bg-[#121212] brutal-border w-full max-w-6xl h-[95vh] md:h-[85vh] shadow-[8px_8px_0px_#00ffcc] flex flex-col md:flex-row">
+                <div className="w-full md:w-80 h-[30%] md:h-full border-b md:border-b-0 md:border-r border-[#2a2a2a] flex flex-col bg-[#0a0a0a] shrink-0">
+                  <div className="p-4 border-b border-[#2a2a2a] flex justify-between items-center">
+                    <h2 className="font-display font-bold text-sm md:text-lg uppercase tracking-widest flex items-center gap-2"><History className="text-[#00ffcc]" size={18}/> Commits</h2>
+                    <button onClick={() => setShowCodeModal(false)} className="md:hidden text-[#888]"><X size={20} /></button>
+                  </div>
+                  <div className="flex-1 overflow-y-auto p-3 space-y-2">
+                    {activeProject?.codeVersions?.map((version, idx) => (
+                       <div key={version.id} onClick={() => { setSelectedVersionId(version.id); setActiveFileTab(0); }} className={`p-3 brutal-border cursor-pointer transition-all ${selectedVersionId === version.id ? 'border-[#00ffcc] bg-[#1a1a1a]' : 'border-[#2a2a2a]'}`}>
+                         <div className="flex items-center gap-2 mb-1">
+                           <GitCommit size={14} className={selectedVersionId === version.id ? "text-[#00ffcc]" : "text-[#666]"} />
+                           <span className="text-[10px] md:text-xs font-bold font-display uppercase text-white truncate">Build #{idx + 1}</span>
+                         </div>
+                       </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex-1 flex flex-col min-w-0 bg-[#070707] relative h-[70%] md:h-full">
+                  {selectedVersionId && (
+                    <div className="bg-[#121212] border-b border-[#2a2a2a]">
+                      <div className="flex overflow-x-auto p-2 gap-2">
+                        {activeProject.codeVersions.find(v => v.id === selectedVersionId)?.files?.map((file, i) => (
+                           <button key={i} onClick={() => setActiveFileTab(i)} className={`px-4 py-2 text-xs font-bold font-display uppercase tracking-wider brutal-border whitespace-nowrap ${activeFileTab === i ? 'bg-[#00ffcc] text-black border-[#00ffcc]' : 'bg-[#0a0a0a] text-[#888] hover:text-white'}`}>
+                             {file.filename}
+                           </button>
+                        ))}
+                      </div>
+                      <div className="p-3 border-t border-[#2a2a2a] flex justify-between">
+                        <button onClick={() => setCodeViewMode(m => m === 'code' ? 'preview' : 'code')} className="text-white text-xs brutal-border px-3 py-1 bg-[#333]">{codeViewMode === 'code' ? 'View Preview' : 'View Code'}</button>
+                        <button onClick={() => setShowCodeModal(false)} className="text-[#888] hover:text-white"><X size={20} /></button>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex-1 overflow-y-auto p-4 bg-[#0a0a0a] relative">
+                    {!selectedVersionId ? <div className="text-center text-[#888] mt-10">Pilih build</div> : (() => {
+                        const currentVer = activeProject.codeVersions.find(v => v.id === selectedVersionId);
+                        const activeFile = currentVer.files[activeFileTab];
+                        if (!activeFile) return <div className="text-[#888]">File tidak ditemukan</div>;
+                        if (codeViewMode === 'code') return <CodeBlock code={activeFile.code} language={activeFile.language} />;
+                        
+                        const htmlFile = currentVer.files.find(f => f.language === 'html')?.code || '<div id="root">HTML not found.</div>';
+                        const cssFile = currentVer.files.find(f => f.language === 'css')?.code || '';
+                        const jsFile = currentVer.files.find(f => f.language === 'javascript' || f.language === 'js')?.code || '';
+                        const combinedCode = `<html><head><style>${cssFile}</style></head><body>${htmlFile}<script>${jsFile}<\/script></body></html>`;
+                        return <iframe srcDoc={activeFile.language === 'html' ? combinedCode : activeFile.code} title="Preview" className="w-full h-full bg-white rounded-sm border-0 absolute inset-0" />;
+                    })()}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+        </div>
+      );
+    }
+
+    const root = createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>
