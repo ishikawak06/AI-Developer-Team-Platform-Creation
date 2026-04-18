@@ -98,7 +98,6 @@
     } from 'https://esm.sh/lucide-react@0.292.0';
 
     // --- GOOGLE APPS SCRIPT INTEGRATION ---
-    // Menggunakan URL milik Anda
     const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzr1aGZfm-lZdxWQ9zxX5IG20YQKTV45Ydr5xqE9plVFiQ1Gaa7eTUwwf9bhPoFL1cA/exec';
 
     const cloudStore = {
@@ -191,6 +190,24 @@
       );
     };
 
+    // FUNGSI RENDER DIEKSTRAK KE LUAR AGAR BISA DIAKSES GLOBAL TANPA REFERENCE ERROR
+    const renderMessageContent = (content) => {
+      const parts = content.split(/(```[\s\S]*?```)/g);
+      return parts.map((part, i) => {
+        if (part.startsWith('```') && part.endsWith('```')) {
+          const lines = part.slice(3, -3).split('\n');
+          const firstLine = lines.shift() || '';
+          const [lang, filename] = firstLine.split(':');
+          return <CodeBlock key={i} code={lines.join('\n')} language={lang?.trim()} filename={filename?.trim()} />;
+        }
+        
+        let safeText = part.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); 
+        safeText = safeText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>'); 
+        safeText = safeText.replace(/`(.*?)`/g, '<code class="bg-[#1a1a1a] text-[var(--accent)] px-1 py-0.5 rounded text-sm">$1</code>'); 
+        return <div key={i} dangerouslySetInnerHTML={{ __html: safeText }} className="mb-2 break-words leading-relaxed" />;
+      });
+    };
+
     const TypewriterText = ({ text, onComplete }) => {
       const [displayedText, setDisplayedText] = useState('');
       
@@ -210,28 +227,10 @@
         return () => clearInterval(interval);
       }, [text]);
 
-      const renderContent = (content) => {
-        const parts = content.split(/(```[\s\S]*?```)/g);
-        return parts.map((part, i) => {
-          if (part.startsWith('```') && part.endsWith('```')) {
-            const lines = part.slice(3, -3).split('\n');
-            const firstLine = lines.shift() || '';
-            const [lang, filename] = firstLine.split(':');
-            return <CodeBlock key={i} code={lines.join('\n')} language={lang?.trim()} filename={filename?.trim()} />;
-          }
-          
-          let safeText = part.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); 
-          safeText = safeText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>'); 
-          safeText = safeText.replace(/`(.*?)`/g, '<code class="bg-[#1a1a1a] text-[var(--accent)] px-1 py-0.5 rounded text-sm">$1</code>'); 
-          return <div key={i} dangerouslySetInnerHTML={{ __html: safeText }} className="mb-2 break-words leading-relaxed" />;
-        });
-      };
-
-      return <>{renderContent(displayedText)}</>;
+      return <>{renderMessageContent(displayedText)}</>;
     };
 
     function App() {
-      // API Key untuk Github Pages user (Disimpan di LocalStorage)
       const [apiKey, setApiKey] = useState(() => localStorage.getItem('nexus_apikey') || '');
       const [isAuthenticated, setIsAuthenticated] = useState(false);
       const [isCloudSyncing, setIsCloudSyncing] = useState(false);
@@ -276,9 +275,9 @@
 
       const activeProject = projects.find(p => p.id === activeProjectId);
       const activeAgent = agents.find(a => a.id === activeAgentId) || agents[0];
-      const nextAgent = agents[agents.findIndex(a => a.id === activeAgentId) + 1];
-
-      const currentChatMsgs = activeProject?.messages[activeAgentId] || [];
+      
+      // BUG FIXED: Perlindungan Optional Chaining ?. ditambahkan untuk menghindari "Cannot read properties of undefined"
+      const currentChatMsgs = activeProject?.messages?.[activeAgentId] || [];
       const approxTokens = Math.floor(JSON.stringify(currentChatMsgs).length / 4);
       const isHighContext = approxTokens > 15000;
 
@@ -373,7 +372,7 @@
       const togglePinMessage = (msgId) => {
         setProjects(prev => prev.map(p => {
           if(p.id !== activeProjectId) return p;
-          const msgs = p.messages[activeAgentId].map(m => m.id === msgId ? {...m, pinned: !m.pinned} : m);
+          const msgs = p.messages?.[activeAgentId]?.map(m => m.id === msgId ? {...m, pinned: !m.pinned} : m) || [];
           return {...p, messages: {...p.messages, [activeAgentId]: msgs}};
         }));
       };
@@ -493,7 +492,7 @@
 
         setProjects(prev => prev.map(p => {
           if(p.id !== activeProjectId) return p;
-          const msgs = overrideHistory || p.messages[activeAgentId] || [];
+          const msgs = overrideHistory || p.messages?.[activeAgentId] || [];
           return { ...p, messages: { ...p.messages, [activeAgentId]: [...msgs, userMsg] }, updatedAt: Date.now() };
         }));
         
@@ -503,7 +502,7 @@
 
         try {
           const proj = projects.find(p => p.id === activeProjectId);
-          const historyToUse = overrideHistory || proj.messages[activeAgentId] || [];
+          const historyToUse = overrideHistory || proj.messages?.[activeAgentId] || [];
           const contextText = historyToUse.map(m => `${m.role === 'user' ? 'User' : 'Agent'}: ${m.text}`).join('\n\n') + `\n\nUser: ${userMsg.text}`;
           
           const ragContext = retrieveRAGContext(userMsg.text);
@@ -520,7 +519,7 @@
 
           setProjects(prev => prev.map(p => p.id === activeProjectId ? {
             ...p, 
-            messages: { ...p.messages, [activeAgentId]: [...(overrideHistory || p.messages[activeAgentId] || []), userMsg, aiMsg] },
+            messages: { ...p.messages, [activeAgentId]: [...(overrideHistory || p.messages?.[activeAgentId] || []), userMsg, aiMsg] },
             codeVersions: [...(p.codeVersions || []), ...newCodeVersions], 
             analytics: { ...p.analytics, tokens: (p.analytics?.tokens || 0) + tokensUsed, timeSpent: (p.analytics?.timeSpent || 0) + timeSpent },
             updatedAt: Date.now()
@@ -532,7 +531,7 @@
 
       const handleEditMessage = (msgId) => {
         const proj = projects.find(p => p.id === activeProjectId);
-        const msgs = proj.messages[activeAgentId];
+        const msgs = proj?.messages?.[activeAgentId] || [];
         const msgIndex = msgs.findIndex(m => m.id === msgId);
         if(msgIndex === -1) return;
         
@@ -588,7 +587,7 @@
           
           isFirst = false;
           const userMsg = { id: generateId(), role: 'user', text: forwardPrompt, timestamp: new Date().toLocaleTimeString() };
-          setProjects(prev => prev.map(p => p.id === activeProjectId ? { ...p, messages: { ...p.messages, [agentId]: [...(p.messages[agentId] || []), userMsg] } } : p));
+          setProjects(prev => prev.map(p => p.id === activeProjectId ? { ...p, messages: { ...p.messages, [agentId]: [...(p.messages?.[agentId] || []), userMsg] } } : p));
           
           try {
             const fullPrompt = `[System: ${targetAgent.prompt}]\n\n${userMsg.text}`;
@@ -602,7 +601,7 @@
             totalTokens += Math.floor(fullPrompt.length / 4) + Math.floor(aiResponseText.length / 4);
 
             setProjects(prev => prev.map(p => p.id === activeProjectId ? { 
-              ...p, messages: { ...p.messages, [agentId]: [...(p.messages[agentId] || []), aiMsg] },
+              ...p, messages: { ...p.messages, [agentId]: [...(p.messages?.[agentId] || []), aiMsg] },
               codeVersions: [...(p.codeVersions || []), ...newCodeVersions], updatedAt: Date.now()
             } : p));
             lastOutput = aiResponseText;
@@ -638,7 +637,6 @@
         setNewProjectName('');
       };
 
-      // Tampilan Autentikasi / API Setup
       if (!isAuthenticated) {
         return (
           <div className="flex h-screen w-full items-center justify-center bg-[#070707] relative overflow-hidden font-mono">
@@ -676,8 +674,7 @@
         );
       }
 
-      // Main UI Logic Render (Ringkas, sisanya identik dengan yang sebelumnya)
-      const rawMessages = activeProject?.messages[activeAgentId] || [];
+      const rawMessages = activeProject?.messages?.[activeAgentId] || [];
       const currentMessages = rawMessages.filter(m => {
         if(filterMode === 'code') return m.text.includes('```');
         if(searchQuery) return m.text.toLowerCase().includes(searchQuery.toLowerCase());
